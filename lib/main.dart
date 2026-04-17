@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:firebase_core/firebase_core.dart'; // Importação do Firebase
-
+import 'package:firebase_core/firebase_core.dart'; 
 import 'widgets/header_widget.dart'; 
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
@@ -15,29 +14,11 @@ import 'screens/privacy_screen.dart';
 import 'screens/help_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/favorites_screen.dart'; 
-
-void main() async { 
-  
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  
-  await Firebase.initializeApp();
-
-
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
-  
-  
-  runApp(const EthosApp());
-}
+import 'package:firebase_auth/firebase_auth.dart';
+import 'screens/login_screen.dart';
 
 class EthosApp extends StatelessWidget {
   const EthosApp({super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -47,19 +28,25 @@ class EthosApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
         primaryColor: const Color(0xFF4CAF50),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF4CAF50),
-          secondary: Color(0xFF4CAF50),
-          surface: Color(0xFF1A1A1A),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black,
-          elevation: 0,
-        ),
+      
       ),
-      initialRoute: '/',
+      
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+         
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          /
+          if (snapshot.hasData) {
+            return const MainNavigation();
+          }
+        
+          return const LoginScreen();
+        },
+      ),
       routes: {
-        '/': (context) => const MainNavigation(),
         '/settings': (context) => const SettingsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
         '/privacy': (context) => const PrivacyScreen(),
