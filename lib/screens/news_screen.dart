@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
 import '../services/news_service.dart';
-import '../widgets/header_widget.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -27,11 +26,13 @@ class _NewsScreenState extends State<NewsScreen> {
 
   Future<void> _loadNews() async {
     final news = await _newsService.getAllNews();
-    setState(() {
-      _allNews = news;
-      _filteredNews = news;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _allNews = news;
+        _filteredNews = news;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _filterByCategory(String category) async {
@@ -41,10 +42,12 @@ class _NewsScreenState extends State<NewsScreen> {
     });
 
     final news = await _newsService.getNewsByCategory(category);
-    setState(() {
-      _filteredNews = news;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _filteredNews = news;
+        _isLoading = false;
+      });
+    }
   }
 
   void _searchNews(String query) async {
@@ -54,22 +57,30 @@ class _NewsScreenState extends State<NewsScreen> {
     }
 
     final results = await _newsService.searchNews(query);
-    setState(() {
-      _filteredNews = results;
-    });
+    if (mounted) {
+      setState(() {
+        _filteredNews = results;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
+    // A CORREÇÃO ESTÁ AQUI: Envolvemos tudo em um Scaffold
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000), // Cor de fundo do app
+      appBar: AppBar(
+        title: const Text('Notícias Verificadas', style: TextStyle(fontSize: 18)),
+        backgroundColor: const Color(0xFF1A1A1A),
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                const HeaderWidget(),
-                const SizedBox(height: 20),
                 _buildSearchBar(),
                 const SizedBox(height: 16),
                 _buildCategoryChips(),
@@ -78,7 +89,7 @@ class _NewsScreenState extends State<NewsScreen> {
           ),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
                 : _buildNewsList(),
           ),
         ],
@@ -96,7 +107,7 @@ class _NewsScreenState extends State<NewsScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: _searchNews,
-        style: const TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 14, color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Buscar notícias verificadas...',
           hintStyle: TextStyle(color: Colors.grey.shade600),
@@ -207,16 +218,6 @@ class _NewsScreenState extends State<NewsScreen> {
                         ),
                       );
                     },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 180,
-                        color: Colors.grey.shade900,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
                   ),
                 ),
                 Positioned(
@@ -238,35 +239,6 @@ class _NewsScreenState extends State<NewsScreen> {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Row(
-                    children: [
-                      _buildCardAction(Icons.bookmark_border),
-                      const SizedBox(width: 8),
-                      _buildCardAction(Icons.share),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.8),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
             Container(
@@ -280,57 +252,22 @@ class _NewsScreenState extends State<NewsScreen> {
                 children: [
                   Text(
                     news.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     news.description,
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 14),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade800,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          Icons.source,
-                          size: 14,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              news.source,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              _formatTime(news.publishedAt),
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
+                      Text(
+                        '${news.source} • ${_formatTime(news.publishedAt)}',
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                       ),
                       _buildVerificationBadge(news),
                     ],
@@ -344,37 +281,21 @@ class _NewsScreenState extends State<NewsScreen> {
     );
   }
 
-  Widget _buildCardAction(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, size: 18, color: Colors.white),
-    );
-  }
-
   Widget _buildVerificationBadge(NewsItem news) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: news.status.color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: news.status.color.withValues(alpha: 0.3)),
+        color: news.status.color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: news.status.color.withValues(alpha: 0.5)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(news.status.icon, color: news.status.color, size: 14),
-          const SizedBox(width: 6),
+          Icon(news.status.icon, color: news.status.color, size: 12),
+          const SizedBox(width: 4),
           Text(
             '${news.confidence}%',
-            style: TextStyle(
-              color: news.status.color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: news.status.color, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -383,28 +304,20 @@ class _NewsScreenState extends State<NewsScreen> {
 
   Color _getCategoryColor(String category) {
     switch (category) {
-      case 'Política':
-        return Colors.blue.shade700;
-      case 'Saúde':
-        return Colors.red.shade700;
-      case 'Tecnologia':
-        return Colors.purple.shade700;
-      case 'Economia':
-        return Colors.amber.shade800;
-      case 'Educação':
-        return Colors.teal.shade700;
-      case 'Meio Ambiente':
-        return Colors.green.shade700;
-      default:
-        return Colors.grey.shade700;
+      case 'Política': return Colors.blue.shade700;
+      case 'Saúde': return Colors.red.shade700;
+      case 'Tecnologia': return Colors.purple.shade700;
+      case 'Economia': return Colors.amber.shade800;
+      case 'Meio Ambiente': return Colors.green.shade700;
+      default: return Colors.grey.shade700;
     }
   }
 
   String _formatTime(DateTime time) {
     final diff = DateTime.now().difference(time);
-    if (diff.inMinutes < 60) return 'Há ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Há ${diff.inHours}h';
-    return 'Há ${diff.inDays} dias';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${diff.inDays}d';
   }
 
   void _showNewsDetail(NewsItem news) {
@@ -419,223 +332,24 @@ class _NewsScreenState extends State<NewsScreen> {
   Widget _buildNewsDetailSheet(NewsItem news) {
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade600,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                // Image
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      news.imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          color: Colors.grey.shade900,
-                          child: const Center(
-                            child: Icon(Icons.image, size: 40, color: Colors.grey),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                // Content
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getCategoryColor(news.category),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              news.category,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          _buildVerificationBadge(news),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        news.title,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.source, size: 16, color: Colors.grey.shade500),
-                          const SizedBox(width: 6),
-                          Text(
-                            news.source,
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Icon(Icons.access_time, size: 16, color: Colors.grey.shade500),
-                          const SizedBox(width: 6),
-                          Text(
-                            _formatTime(news.publishedAt),
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        news.description,
-                        style: TextStyle(
-                          color: Colors.grey.shade300,
-                          fontSize: 15,
-                          height: 1.6,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Verification info
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.verified,
-                                  color: Color(0xFF4CAF50),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Verificado pela Equipe ETHOS',
-                                  style: TextStyle(
-                                    color: Color(0xFF4CAF50),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Esta notícia foi verificada por nossa equipe de fact-checkers '
-                              'e apresenta ${news.confidence}% de confiabilidade baseada em '
-                              'fontes oficiais e dados verificáveis.',
-                              style: TextStyle(
-                                color: Colors.grey.shade300,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Actions
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildActionButton(
-                              Icons.share,
-                              'Compartilhar',
-                              const Color(0xFF4CAF50),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildActionButton(
-                              Icons.bookmark_border,
-                              'Salvar',
-                              Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ],
+      builder: (_, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(20),
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 20),
+            ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(news.imageUrl, fit: BoxFit.cover)),
+            const SizedBox(height: 20),
+            Text(news.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 15),
+            Text(news.description, style: const TextStyle(fontSize: 16, color: Colors.white70, height: 1.5)),
+          ],
+        ),
       ),
     );
   }

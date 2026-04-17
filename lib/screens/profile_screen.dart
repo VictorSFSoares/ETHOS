@@ -29,29 +29,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const HeaderWidget(),
-                  const SizedBox(height: 24),
-                  _buildProfileHeader(),
-                  const SizedBox(height: 24),
-                  _buildStatsSection(),
-                  const SizedBox(height: 24),
-                  _buildAchievementsSection(),
-                  const SizedBox(height: 24),
-                  _buildMenuSection(),
-                  const SizedBox(height: 24),
-                ],
-              ),
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildProfileHeader(),
+                const SizedBox(height: 24),
+                _buildStatsSection(),
+                const SizedBox(height: 24),
+                _buildAchievementsSection(),
+                const SizedBox(height: 24),
+                _buildMenuSection(),
+                const SizedBox(height: 24),
+              ],
             ),
-    );
+          );
   }
 
   Widget _buildProfileHeader() {

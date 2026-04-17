@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
+import '../services/economy_service.dart';
 import '../services/verification_service.dart';
-import '../widgets/header_widget.dart';
+import '../services/news_service.dart';
+// Import corrigido: como estão na mesma pasta, basta o nome do arquivo
+import 'news_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,7 +15,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final VerificationService _verificationService = VerificationService();
+  final NewsService _newsService = NewsService(); 
+  
   List<VerificationItem> _recentVerifications = [];
+  List<NewsItem> _latestNews = [];
   bool _isLoading = true;
 
   @override
@@ -23,31 +29,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData() async {
     final verifications = await _verificationService.getRecentVerifications();
-    setState(() {
-      _recentVerifications = verifications.take(4).toList();
-      _isLoading = false;
-    });
+    final news = await _newsService.getAllNews(); 
+    
+    if (mounted) {
+      setState(() {
+        _recentVerifications = verifications.take(3).toList();
+        _latestNews = news.take(3).toList();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const HeaderWidget(),
-            const SizedBox(height: 24),
-            _buildVerificationSection(),
-            const SizedBox(height: 24),
-            _buildQuickActions(context),
-            const SizedBox(height: 24),
-            _buildTipsSection(),
-            const SizedBox(height: 24),
-            _buildRecentVerifications(),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildVerificationSection(),
+          const SizedBox(height: 24),
+          _buildQuickActions(context),
+          const SizedBox(height: 24),
+          _buildMarketRates(),
+          const SizedBox(height: 24),
+          _buildDashboardNews(), 
+          const SizedBox(height: 24),
+          _buildTipsSection(),
+          const SizedBox(height: 24),
+          _buildRecentVerifications(),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -56,109 +68,30 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade800),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.verified_user,
-                  color: Color(0xFF4CAF50),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Central de verificação',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Submeta qualquer conteúdo para análise',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
+              Icon(Icons.shield, color: Colors.white, size: 28),
+              SizedBox(width: 10),
+              Text(
+                'Ambiente Seguro',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          _buildVerificationOptions(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVerificationOptions() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildOptionCard(
-            Icons.link,
-            'Link',
-            'Verifique URLs e sites',
-            Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildOptionCard(
-            Icons.text_fields,
-            'Texto',
-            'Analise afirmações',
-            Colors.purple,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOptionCard(IconData icon, String title, String subtitle, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade400,
-            ),
-            textAlign: TextAlign.center,
+            'Você está protegido pelo ETHOS. Fique atualizado e verifique conteúdos suspeitos.',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
           ),
         ],
       ),
@@ -166,70 +99,268 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _buildActionCard(
-            Icons.image,
-            'Imagem',
-            'Detecte manipulações',
-            Colors.teal,
-          ),
+        const Text(
+          'Acesso Rápido',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionCard(
-            Icons.audiotrack,
-            'Áudio',
-            'Verifique gravações',
-            Colors.orange,
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildQuickAction(Icons.article, 'Notícias', 'Em alta', Colors.blue),
+              _buildQuickAction(Icons.trending_up, 'Trending', 'Mais lidos', const Color(0xFF4CAF50)),
+              _buildQuickAction(
+                Icons.star, 
+                'Favoritos', 
+                'Salvos', 
+                Colors.amber,
+                onTap: () => Navigator.pushNamed(context, '/favorites'),
+              ),
+              _buildQuickAction(Icons.history, 'Histórico', 'Buscas', Colors.purple),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(IconData icon, String title, String subtitle, Color color) {
+  Widget _buildQuickAction(IconData icon, String title, String subtitle, Color color, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 100, 
+        height: 115, 
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade800),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center, 
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis, 
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMarketRates() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Mercado em Tempo Real',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        const SizedBox(height: 12),
+        FutureBuilder<List<CurrencyRate>>(
+          future: EconomyService().getMarketRates(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)));
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Text('Moedas indisponíveis no momento.', style: TextStyle(color: Colors.grey.shade600));
+            }
+            final rates = snapshot.data!;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: rates.map((rate) => _buildCurrencyCard(rate)).toList(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrencyCard(CurrencyRate rate) {
+    final isPositive = rate.variation >= 0;
+    final color = isPositive ? const Color(0xFF4CAF50) : const Color(0xFFE53935);
+    final icon = isPositive ? Icons.arrow_upward : Icons.arrow_downward;
+
     return Container(
+      width: 140,
+      margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade800),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 24),
+          Text(rate.name, style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(
+            'R\$ ${rate.buyValue.toStringAsFixed(2)}',
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(icon, color: color, size: 14),
+              const SizedBox(width: 4),
+              Text(
+                '${rate.variation}%',
+                style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardNews() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Últimas Notícias',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (context) => const NewsScreen())
+              ),
+              child: const Row(
+                children: [
+                  Text('Ver todas', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward, color: Color(0xFF4CAF50), size: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
+        else if (_latestNews.isEmpty)
+          Center(child: Text('Nenhuma notícia no momento.', style: TextStyle(color: Colors.grey.shade600)))
+        else
+          ..._latestNews.map((news) => _buildCompactNewsCard(news)),
+      ],
+    );
+  }
+
+  Widget _buildCompactNewsCard(NewsItem news) {
+    return GestureDetector(
+      onTap: () {
+        // Se a sua NewsScreen não tiver o "const", remova-o abaixo
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const NewsScreen()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        height: 80,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade800),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(11)),
+              child: Image.network(
+                news.imageUrl,
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 80,
+                  height: 80,
+                  color: Colors.grey.shade900,
+                  child: const Icon(Icons.image, color: Colors.grey),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      news.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white, 
+                        fontSize: 13, 
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Verificado',
+                            style: TextStyle(color: Color(0xFF4CAF50), fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${news.source} · ${_formatTime(news.publishedAt)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -239,69 +370,34 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade800),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(
-                  Icons.lightbulb,
-                  color: Colors.amber,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Dicas para identificar Fake News',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildTipItem('1.', 'Verifique a fonte e a data da publicação.'),
-          _buildTipItem('2.', 'Desconfie de títulos sensacionalistas.'),
-          _buildTipItem('3.', 'Procure a notícia em outros veículos.'),
-          _buildTipItem('4.', 'Analise se há erros de português.'),
-          _buildTipItem('5.', 'Não compartilhe antes de verificar.'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTipItem(String number, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            number,
-            style: const TextStyle(
-              color: Color(0xFF4CAF50),
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.lightbulb_outline, color: Colors.blue),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade300,
-              ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dica do dia',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Sempre verifique a fonte original da notícia antes de compartilhar com familiares.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
             ),
           ),
         ],
@@ -313,28 +409,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Verificações Recentes',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Ver todas',
-                style: TextStyle(color: Color(0xFF4CAF50)),
-              ),
-            ),
-          ],
+        const Text(
+          'Suas Verificações Recentes',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         if (_isLoading)
           const Center(child: CircularProgressIndicator())
+        else if (_recentVerifications.isEmpty)
+          Center(
+            child: Text(
+              'Nenhuma verificação recente.',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          )
         else
           ..._recentVerifications.map((v) => _buildVerificationItem(v)),
       ],
@@ -358,11 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: item.status.color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              item.status.icon,
-              color: item.status.color,
-              size: 20,
-            ),
+            child: Icon(item.status.icon, color: item.status.color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -371,28 +455,17 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   item.content,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${item.source} · ${_formatTime(item.verifiedAt)}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),
-          ),
-          const Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: Colors.grey,
           ),
         ],
       ),

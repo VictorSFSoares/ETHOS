@@ -75,30 +75,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const HeaderWidget(),
-                const SizedBox(height: 20),
-                _buildSearchBar(),
-                const SizedBox(height: 16),
-                _buildFilterChips(),
-                const SizedBox(height: 16),
-                _buildStatsCards(),
-              ],
-            ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _buildSearchBar(),
+              const SizedBox(height: 16),
+              _buildFilterChips(),
+              const SizedBox(height: 16),
+              _buildStatsCards(),
+            ],
           ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildVerificationList(),
-          ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildVerificationList(),
+        ),
+      ],
     );
   }
 
