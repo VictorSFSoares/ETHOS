@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "315587143368",
+    "project_id": "ethos-6c24a",
+    "storage_bucket": "ethos-6c24a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315587143368:android:daf076896f3875bcb867fd",
+        "android_client_info": {
+          "package_name": "com.senac.ETHOS"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBr3JnYn7qKgS5Ly67JsOgx4TKFpRv-M9g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
