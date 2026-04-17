@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:firebase_core/firebase_core.dart'; // Importação do Firebase
 
 import 'widgets/header_widget.dart'; 
-
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/news_screen.dart';
@@ -16,19 +16,28 @@ import 'screens/help_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/favorites_screen.dart'; 
 
-void main() {
+void main() async { 
+  
   WidgetsFlutterBinding.ensureInitialized();
+  
+  
+  await Firebase.initializeApp();
+
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ),
   );
+  
+  
   runApp(const EthosApp());
 }
 
 class EthosApp extends StatelessWidget {
   const EthosApp({super.key});
+
 
   @override
   Widget build(BuildContext context) {
