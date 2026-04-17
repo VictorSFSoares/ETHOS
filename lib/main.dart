@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:firebase_core/firebase_core.dart'; 
+import 'package:firebase_core/firebase_core.dart'; // Importação do Firebase
 import 'widgets/header_widget.dart'; 
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
@@ -28,24 +28,32 @@ class EthosApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
         primaryColor: const Color(0xFF4CAF50),
-      
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF4CAF50),
+          secondary: Color(0xFF4CAF50),
+          surface: Color(0xFF1A1A1A),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.black,
+          elevation: 0,
+        ),
       ),
-      
-      home: StreamBuilder<User?>(
+     home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-         
+          // Se o Firebase ainda está a verificar o estado, mostramos um loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          /
+          // Se temos um utilizador (já está logado), vai para a navegação principal
           if (snapshot.hasData) {
             return const MainNavigation();
           }
-        
+          // Se não, vai para a tela de Login
           return const LoginScreen();
         },
       ),
+      // Mantenha as rotas, apenas remova a '/' pois ela é controlada pelo 'home' acima
       routes: {
         '/settings': (context) => const SettingsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
