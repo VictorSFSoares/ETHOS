@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:firebase_core/firebase_core.dart'; // Importação do Firebase
+import 'package:firebase_core/firebase_core.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'widgets/header_widget.dart'; 
 import 'screens/home_screen.dart';
-import 'screens/history_screen.dart';
+import 'screens/historycheck_screen.dart'; // Certifique-se de que o nome do arquivo está correto
 import 'screens/news_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/verify_screen.dart';
@@ -14,8 +15,18 @@ import 'screens/privacy_screen.dart';
 import 'screens/help_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/favorites_screen.dart'; 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/login_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Erro Firebase: $e");
+  }
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  runApp(const EthosApp());
+}
 
 class EthosApp extends StatelessWidget {
   const EthosApp({super.key});
@@ -33,27 +44,17 @@ class EthosApp extends StatelessWidget {
           secondary: Color(0xFF4CAF50),
           surface: Color(0xFF1A1A1A),
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black,
-          elevation: 0,
-        ),
       ),
-     home: StreamBuilder<User?>(
+      home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          // Se o Firebase ainda está a verificar o estado, mostramos um loading
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
-          // Se temos um utilizador (já está logado), vai para a navegação principal
-          if (snapshot.hasData) {
-            return const MainNavigation();
-          }
-          // Se não, vai para a tela de Login
+          if (snapshot.hasData) return const MainNavigation();
           return const LoginScreen();
         },
       ),
-      // Mantenha as rotas, apenas remova a '/' pois ela é controlada pelo 'home' acima
       routes: {
         '/settings': (context) => const SettingsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
@@ -68,29 +69,25 @@ class EthosApp extends StatelessWidget {
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
-
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 2; // Começa na Casinha (Meio)
-
-  // As telas "puras" (lembre-se de tirar o SafeArea/Scaffold de dentro delas)
+  int _currentIndex = 2;
   final List<Widget> _screens = [
-    const VerifyScreen(),  // 0
-    const HistoryScreen(), // 1
-    const HomeScreen(),    // 2
-    const NewsScreen(),    // 3
-    const ProfileScreen(), // 4
+    const VerifyScreen(),
+    const HistoryCheckScreen(), // Usando o arquivo que você mandou
+    const HomeScreen(),
+    const NewsScreen(),
+    const ProfileScreen(),
   ];
 
-  // Retorna o título correto baseado na aba selecionada
   String _getAppTitle(int index) {
     switch (index) {
       case 0: return 'Análise ETHOS';
       case 1: return 'Seu Histórico';
-      case 2: return 'ETHOS'; // Casinha
+      case 2: return 'ETHOS';
       case 3: return 'Notícias Seguras';
       case 4: return 'Seu Perfil';
       default: return 'ETHOS';
@@ -101,23 +98,17 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black, 
-      // 1. O CORPO AGORA CONTROLA O CABEÇALHO GLOBALMENTE
       body: SafeArea(
         child: Column(
           children: [
-            // O Cabeçalho Padrão, que muda o título dinamicamente
             Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+              padding: const EdgeInsets.all(16.0),
               child: HeaderWidget(
                 title: _getAppTitle(_currentIndex),
-                showBackButton: false, // Sem botão de voltar nas abas principais
+                showBackButton: false,
               ),
             ),
-            
-            // O conteúdo da tela selecionada preenche o resto do espaço
-            Expanded(
-              child: _screens[_currentIndex],
-            ),
+            Expanded(child: _screens[_currentIndex]),
           ],
         ),
       ),
@@ -126,19 +117,14 @@ class _MainNavigationState extends State<MainNavigation> {
         backgroundColor: Colors.transparent,
         color: const Color(0xFF1A1A1A), 
         buttonBackgroundColor: const Color(0xFF4CAF50), 
-        animationDuration: const Duration(milliseconds: 300),
         items: const [
-          Icon(Icons.shield, color: Colors.white, size: 26),      // 0: Verificar
-          Icon(Icons.history, color: Colors.white, size: 26),     // 1: Histórico
-          Icon(Icons.home, color: Colors.white, size: 26),        // 2: Casinha
-          Icon(Icons.article, color: Colors.white, size: 26),     // 3: Notícias
-          Icon(Icons.person, color: Colors.white, size: 26),      // 4: Perfil
+          Icon(Icons.shield, color: Colors.white),
+          Icon(Icons.history, color: Colors.white),
+          Icon(Icons.home, color: Colors.white),
+          Icon(Icons.article, color: Colors.white),
+          Icon(Icons.person, color: Colors.white),
         ],
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
   }

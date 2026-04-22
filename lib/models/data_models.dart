@@ -61,7 +61,7 @@ class NewsItem {
   factory NewsItem.fromRssJson(Map<String, dynamic> json) {
     final confidenceScore = 85 + (DateTime.now().millisecond % 15); 
     
-    // Extrator agressivo de imagens do G1
+    // Extrator de imagens do G1
     String imgUrl = json['thumbnail']?.toString() ?? '';
     
     if (imgUrl.isEmpty && json['enclosure'] != null) {
@@ -73,27 +73,32 @@ class NewsItem {
       if (match != null) imgUrl = match.group(1) ?? '';
     }
 
-    // Tira o bloqueio do Android forçando HTTPS
+    // Garante HTTPS para evitar bloqueios no Android
     if (imgUrl.startsWith('http://')) {
       imgUrl = imgUrl.replaceFirst('http://', 'https://');
     }
 
-    // Imagem reserva elegante caso a matéria não tenha foto
+    // Imagem de fallback caso não encontre nenhuma
     if (imgUrl.isEmpty || imgUrl.length < 5) {
       imgUrl = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800';
     }
 
-    String rawDesc = json['description']?.toString() ?? 'Sem descrição.';
+    // Limpeza de Tags HTML para o texto aparecer limpo
+    String rawDesc = json['description']?.toString() ?? 'Sem descrição disponível.';
     String cleanDesc = rawDesc.replaceAll(RegExp(r'<[^>]*>|&[^;]+;'), '').trim();
-    if (cleanDesc.isEmpty) cleanDesc = 'Acesse para ler mais detalhes.';
+    
+    // Fallback se a descrição limpa ficar vazia
+    if (cleanDesc.isEmpty) cleanDesc = 'Clique para ler os detalhes completos desta notícia no portal.';
 
     DateTime pubDate = DateTime.now();
     if (json['pubDate'] != null) {
-      try { pubDate = DateTime.parse(json['pubDate'].toString().replaceAll(' ', 'T')); } catch (_) {}
+      try { 
+        pubDate = DateTime.parse(json['pubDate'].toString().replaceAll(' ', 'T')); 
+      } catch (_) {}
     }
 
     return NewsItem(
-      id: json['guid']?.toString() ?? DateTime.now().toString(),
+      id: json['guid']?.toString() ?? json['link']?.toString() ?? DateTime.now().toString(),
       title: json['title']?.toString() ?? 'Sem título',
       description: cleanDesc,
       imageUrl: imgUrl,
@@ -170,7 +175,6 @@ class CurrencyRate {
 
   factory CurrencyRate.fromJson(Map<String, dynamic> json) {
     return CurrencyRate(
-      // Pega só o primeiro nome (ex: "Dólar Americano" em vez de "Dólar Americano/Real Brasileiro")
       name: json['name']?.toString().split('/').first ?? 'Desconhecido',
       code: json['code'] ?? '',
       buyValue: double.tryParse(json['ask'] ?? '0') ?? 0.0,
