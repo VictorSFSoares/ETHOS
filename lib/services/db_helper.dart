@@ -54,11 +54,10 @@ class DBHelper {
   Future<void> updateProfile(
       String email, String name, String avatarPath) async {
     final db = await database;
-    await db.update(
+    await db.insert(
       'profiles',
-      {'name': name, 'avatar_path': avatarPath},
-      where: 'email = ?',
-      whereArgs: [email],
+      {'email': email, 'name': name, 'avatar_path': avatarPath},
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 }

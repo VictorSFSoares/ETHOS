@@ -117,10 +117,17 @@ class _MainNavigationState extends State<MainNavigation> {
   Future<void> _syncUser() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.email != null) {
-      final profile = await DBHelper().getProfile(user.email!);
+      var profile = await DBHelper().getProfile(user.email!);
+
+      if (profile == null) {
+        // Trocamos 'Usuário ETHOS' por '' (vazio)
+        await DBHelper().createInitialProfile(user.email!, '');
+        profile = await DBHelper().getProfile(user.email!);
+      }
+
       if (profile != null) {
-        // Guarda o utilizador na memória
-        UserService().setUser(user.email!, profile['name'] ?? 'Usuário ETHOS');
+        // Trocamos 'Usuário ETHOS' por '' (vazio)
+        UserService().setUser(user.email!, profile['name'] ?? '');
       }
     }
   }

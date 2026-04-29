@@ -29,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // 2. Vai ao banco local buscar a foto e o nome para a sessão
       final profile = await DBHelper().getProfile(email);
-      final name = profile != null ? profile['name'] : 'Usuário ETHOS';
+      final name = profile != null ? profile['name'] : '';
 
       UserService().setUser(email, name);
     } on FirebaseAuthException catch (e) {
