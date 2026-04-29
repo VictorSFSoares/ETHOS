@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/user_service.dart';
+import '../services/db_helper.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -9,19 +11,37 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   Future<void> _register() async {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, insira o seu nome')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
+      // 1. Cria a conta no Firebase
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      // Se der certo, o StreamBuilder no main.dart vai detetar e mudar a tela automaticamente
-      if (mounted) Navigator.pop(context); 
+
+      final email = _emailController.text.trim();
+      final name = _nameController.text.trim();
+
+      // 2. Regista quem está online
+      UserService().setUser(email, name);
+
+      // 3. Cria a "pasta" dele no Banco de Dados do telemóvel
+      await DBHelper().createInitialProfile(email, name);
+
+      if (mounted) Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -42,6 +62,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Nome Completo',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
@@ -68,7 +96,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       minimumSize: const Size(double.infinity, 50),
                     ),
                     onPressed: _register,
-                    child: const Text('Cadastrar', style: TextStyle(color: Colors.white, fontSize: 18)),
+                    child: const Text('Cadastrar',
+                        style: TextStyle(color: Colors.white, fontSize: 18)),
                   ),
           ],
         ),

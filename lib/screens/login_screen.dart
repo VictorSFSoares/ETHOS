@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/user_service.dart';
+import '../services/db_helper.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,11 +19,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     setState(() => _isLoading = true);
     try {
+      // 1. Firebase verifica a senha
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      // Se o login for bem sucedido, o AuthWrapper no main.dart assume o controlo
+
+      final email = _emailController.text.trim();
+
+      // 2. Vai ao banco local buscar a foto e o nome para a sessão
+      final profile = await DBHelper().getProfile(email);
+      final name = profile != null ? profile['name'] : 'Usuário ETHOS';
+
+      UserService().setUser(email, name);
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -43,12 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.shield, size: 80, color: Color(0xFF4CAF50)),
-              const SizedBox(height: 20),
-              const Text(
-                'Bem-vindo ao ETHOS',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -75,16 +80,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         minimumSize: const Size(double.infinity, 50),
                       ),
                       onPressed: _login,
-                      child: const Text('Entrar', style: TextStyle(color: Colors.white, fontSize: 18)),
+                      child: const Text('Entrar',
+                          style: TextStyle(color: Colors.white, fontSize: 18)),
                     ),
               TextButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const RegisterScreen()),
                   );
                 },
-                child: const Text('Não tem uma conta? Cadastre-se', style: TextStyle(color: Colors.grey)),
+                child: const Text('Não tem uma conta? Cadastre-se',
+                    style: TextStyle(color: Colors.grey)),
               ),
             ],
           ),
