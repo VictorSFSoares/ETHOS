@@ -3,7 +3,7 @@ import '../models/data_models.dart';
 import '../services/economy_service.dart';
 import '../services/verification_service.dart';
 import '../services/news_service.dart';
-// Import corrigido: como estão na mesma pasta, basta o nome do arquivo
+import 'historycheck_screen.dart';
 import 'news_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
@@ -28,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
+    // Carrega dados dos serviços
     final verifications = await _verificationService.getRecentVerifications();
     final news = await _newsService.getAllNews(); 
     
@@ -49,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildVerificationSection(),
           const SizedBox(height: 24),
-          _buildQuickActions(context),
+          _buildQuickActions(context), // Passando context para navegação
           const SizedBox(height: 24),
           _buildMarketRates(),
           const SizedBox(height: 24),
@@ -111,8 +112,20 @@ class _HomeScreenState extends State<HomeScreen> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildQuickAction(Icons.article, 'Notícias', 'Em alta', Colors.blue),
-              _buildQuickAction(Icons.trending_up, 'Trending', 'Mais lidos', const Color(0xFF4CAF50)),
+              _buildQuickAction(
+                Icons.article, 
+                'Notícias', 
+                'Em alta', 
+                Colors.blue,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NewsScreen())),
+              ),
+              _buildQuickAction(
+                Icons.trending_up, 
+                'Trending', 
+                'Mais lidos', 
+                const Color(0xFF4CAF50),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NewsScreen())),
+              ),
               _buildQuickAction(
                 Icons.star, 
                 'Favoritos', 
@@ -120,7 +133,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Colors.amber,
                 onTap: () => Navigator.pushNamed(context, '/favorites'),
               ),
-              _buildQuickAction(Icons.history, 'Histórico', 'Buscas', Colors.purple),
+              _buildQuickAction(
+                Icons.history, 
+                'Histórico', 
+                'Buscas', 
+                Colors.purple,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryCheckScreen())),
+              ),
             ],
           ),
         ),
@@ -282,7 +301,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCompactNewsCard(NewsItem news) {
     return GestureDetector(
       onTap: () {
-        // Se a sua NewsScreen não tiver o "const", remova-o abaixo
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const NewsScreen()),
