@@ -1,35 +1,27 @@
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
-import 'verification_service.dart';
 
-/// Serviço de Usuário - Gerencia perfil e conquistas
 class UserService {
-  // Singleton
   static final UserService _instance = UserService._internal();
   factory UserService() => _instance;
   UserService._internal();
 
-  final VerificationService _verificationService = VerificationService();
+  // Guarda o utilizador que está logado atualmente
+  String? currentUserEmail;
+  String? currentUserName;
 
-  // Perfil do usuário simulado
-  Future<UserProfile> getUserProfile() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    final stats = await _verificationService.getUserStats();
-    final achievements = _generateAchievements(stats);
-
-    return UserProfile(
-      id: 'user_001',
-      name: 'Joelson Balduíno',
-      email: 'joel_beto@gmail.com',
-      badge: 'Verificador Bronze',
-      memberSince: DateTime(2026, 1, 15),
-      stats: stats,
-      achievements: achievements,
-    );
+  void setUser(String email, String name) {
+    currentUserEmail = email;
+    currentUserName = name;
   }
 
-  List<Achievement> _generateAchievements(UserStats stats) {
+  void clearUser() {
+    currentUserEmail = null;
+    currentUserName = null;
+  }
+
+  // As tuas conquistas originais mantidas aqui
+  List<Achievement> generateAchievements(UserStats stats) {
     return [
       Achievement(
         id: 'first_check',
@@ -50,17 +42,8 @@ class UserService {
         total: 10,
       ),
       Achievement(
-        id: 'verifier_50',
-        title: 'Verificador Ativo',
-        description: 'Realize 50 verificações',
-        icon: Icons.task_alt,
-        unlocked: stats.totalVerifications >= 50,
-        progress: stats.totalVerifications > 50 ? 50 : stats.totalVerifications,
-        total: 50,
-      ),
-      Achievement(
-        id: 'truth_seeker',
-        title: 'Buscador da Verdade',
+        id: 'verified_25',
+        title: 'Verificador Prata',
         description: 'Confirme 25 notícias verdadeiras',
         icon: Icons.fact_check,
         unlocked: stats.verified >= 25,
@@ -73,7 +56,8 @@ class UserService {
         description: 'Realize 100 verificações',
         icon: Icons.military_tech,
         unlocked: stats.totalVerifications >= 100,
-        progress: stats.totalVerifications > 100 ? 100 : stats.totalVerifications,
+        progress:
+            stats.totalVerifications > 100 ? 100 : stats.totalVerifications,
         total: 100,
       ),
       Achievement(
@@ -88,24 +72,10 @@ class UserService {
     ];
   }
 
-  // Obter badge baseado no nível
   String getBadge(int totalVerifications) {
     if (totalVerifications >= 100) return 'Verificador Diamante';
     if (totalVerifications >= 50) return 'Verificador Ouro';
     if (totalVerifications >= 25) return 'Verificador Prata';
     return 'Verificador Bronze';
-  }
-
-  Color getBadgeColor(String badge) {
-    switch (badge) {
-      case 'Verificador Diamante':
-        return Colors.cyan;
-      case 'Verificador Ouro':
-        return Colors.amber;
-      case 'Verificador Prata':
-        return Colors.grey;
-      default:
-        return Colors.brown;
-    }
   }
 }
