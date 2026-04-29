@@ -33,9 +33,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
       UserService().setUser(email, name);
     } on FirebaseAuthException catch (e) {
+      // Captura erros do Firebase (Email errado, senha errada, etc)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Erro ao fazer login')),
+          SnackBar(content: Text('Acesso negado: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      // Captura QUALQUER outro erro (Ex: Erro do SQLite/Base de Dados)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro do sistema: $e')),
         );
       }
     } finally {
