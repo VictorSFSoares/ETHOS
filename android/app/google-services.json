@@ -7,9 +7,28 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:315587143368:android:daf076896f3875bcb867fd",
+        "mobilesdk_app_id": "1:315587143368:android:677f3902a31b052bb867fd",
         "android_client_info": {
           "package_name": "com.example.ethos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBr3JnYn7qKgS5Ly67JsOgx4TKFpRv-M9g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315587143368:android:daf076896f3875bcb867fd",
+        "android_client_info": {
+          "package_name": "com.senac.ETHOS"
         }
       },
       "oauth_client": [],
