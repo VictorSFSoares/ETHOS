@@ -5,8 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'widgets/header_widget.dart';
-import 'services/db_helper.dart'; // Adicionado
-import 'services/user_service.dart'; // Adicionado
+import 'services/db_helper.dart'; 
+import 'services/user_service.dart'; 
 
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
@@ -20,15 +20,20 @@ import 'screens/help_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
+
 
 void main() async {
+  // 1. Liga o motor do Flutter
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint("Erro Firebase: $e");
-  }
+  
+  // 2. Inicia o Firebase em "segundo plano" (sem o await!)
+  Firebase.initializeApp().catchError((e) => print(e));
+
+  // 3. Trava a tela
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  // 4. SOBE O APP (Isso faz o SplashScreen aparecer IMEDIATAMENTE)
   runApp(const EthosApp());
 }
 
@@ -53,8 +58,9 @@ class EthosApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      // AuthWrapper verifica se o utilizador está logado no Firebase
-      home: const AuthWrapper(),
+      // --- ALTERADO AQUI: O app agora inicia no Vídeo ---
+      home: const SplashScreen(), 
+      // ------------------------------------------------
       routes: {
         '/settings': (context) => const SettingsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
@@ -67,6 +73,7 @@ class EthosApp extends StatelessWidget {
   }
 }
 
+// MANTIDO EXATAMENTE IGUAL ABAIXO
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -82,9 +89,9 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         if (snapshot.hasData) {
-          return const MainNavigation(); // Se logado, vai para a navegação principal
+          return const MainNavigation(); 
         }
-        return const LoginScreen(); // Se não logado, vai para o Login
+        return const LoginScreen(); 
       },
     );
   }
@@ -98,7 +105,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 2; // Começa na Casinha (Home)
+  int _currentIndex = 2; 
 
   final List<Widget> _screens = [
     const VerifyScreen(),
@@ -111,7 +118,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    _syncUser(); // Garante que carrega os dados mal a App abre!
+    _syncUser(); 
   }
 
   Future<void> _syncUser() async {
@@ -120,13 +127,11 @@ class _MainNavigationState extends State<MainNavigation> {
       var profile = await DBHelper().getProfile(user.email!);
 
       if (profile == null) {
-        // Trocamos 'Usuário ETHOS' por '' (vazio)
         await DBHelper().createInitialProfile(user.email!, '');
         profile = await DBHelper().getProfile(user.email!);
       }
 
       if (profile != null) {
-        // Trocamos 'Usuário ETHOS' por '' (vazio)
         UserService().setUser(user.email!, profile['name'] ?? '');
       }
     }
