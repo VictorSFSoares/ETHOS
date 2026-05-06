@@ -4,10 +4,12 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// Widgets e Services
 import 'widgets/header_widget.dart';
 import 'services/db_helper.dart'; 
 import 'services/user_service.dart'; 
 
+// Screens (Removi os imports que não estavam sendo usados no código fornecido)
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/news_screen.dart';
@@ -22,18 +24,19 @@ import 'screens/favorites_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
-
 void main() async {
-  // 1. Liga o motor do Flutter
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 2. Inicia o Firebase em "segundo plano" (sem o await!)
-  Firebase.initializeApp().catchError((e) => print(e));
+  // CORREÇÃO TÉCNICA: O Firebase DEVE ser esperado (await) antes do runApp
+  // para evitar erros de inicialização em telas que dependem de Auth.
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint("Erro ao iniciar Firebase: $e");
+  }
 
-  // 3. Trava a tela
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  // 4. SOBE O APP (Isso faz o SplashScreen aparecer IMEDIATAMENTE)
   runApp(const EthosApp());
 }
 
@@ -51,16 +54,15 @@ class EthosApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF4CAF50),
           secondary: Color(0xFF4CAF50),
-          surface: Color(0xFF1A1A1A),
+          surface: const Color(0xFF1A1A1A),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.black,
           elevation: 0,
         ),
       ),
-      // --- ALTERADO AQUI: O app agora inicia no Vídeo ---
+      // Inicia na SplashScreen
       home: const SplashScreen(), 
-      // ------------------------------------------------
       routes: {
         '/settings': (context) => const SettingsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
@@ -73,7 +75,7 @@ class EthosApp extends StatelessWidget {
   }
 }
 
-// MANTIDO EXATAMENTE IGUAL ABAIXO
+// AuthWrapper: Decide se vai para Login ou Home
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -107,12 +109,12 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 2; 
 
-  final List<Widget> _screens = [
-    const VerifyScreen(),
-    const HistoryScreen(),
-    const HomeScreen(),
-    const NewsScreen(),
-    const ProfileScreen(),
+  final List<Widget> _screens = const [
+    VerifyScreen(),
+    HistoryScreen(),
+    HomeScreen(),
+    NewsScreen(),
+    ProfileScreen(),
   ];
 
   @override
@@ -124,11 +126,12 @@ class _MainNavigationState extends State<MainNavigation> {
   Future<void> _syncUser() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.email != null) {
-      var profile = await DBHelper().getProfile(user.email!);
+      final db = DBHelper();
+      var profile = await db.getProfile(user.email!);
 
       if (profile == null) {
-        await DBHelper().createInitialProfile(user.email!, '');
-        profile = await DBHelper().getProfile(user.email!);
+        await db.createInitialProfile(user.email!, '');
+        profile = await db.getProfile(user.email!);
       }
 
       if (profile != null) {
@@ -138,20 +141,14 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   String _getAppTitle(int index) {
-    switch (index) {
-      case 0:
-        return 'Análise ETHOS';
-      case 1:
-        return 'Seu Histórico';
-      case 2:
-        return 'ETHOS';
-      case 3:
-        return 'Notícias Seguras';
-      case 4:
-        return 'Seu Perfil';
-      default:
-        return 'ETHOS';
-    }
+    const titles = [
+      'Análise ETHOS',
+      'Seu Histórico',
+      'ETHOS',
+      'Notícias Seguras',
+      'Seu Perfil'
+    ];
+    return titles[index];
   }
 
   @override
@@ -162,8 +159,7 @@ class _MainNavigationState extends State<MainNavigation> {
         child: Column(
           children: [
             Padding(
-              padding:
-                  const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+              padding: const EdgeInsets.all(16.0),
               child: HeaderWidget(
                 title: _getAppTitle(_currentIndex),
                 showBackButton: false,

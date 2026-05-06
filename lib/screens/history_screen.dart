@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
 import '../services/verification_service.dart';
-import '../widgets/header_widget.dart';
+// Removido import do header_widget se não estiver sendo usado nesta tela específica
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -11,6 +11,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
+  // Instância única do serviço
   final VerificationService _verificationService = VerificationService();
   final TextEditingController _searchController = TextEditingController();
   
@@ -20,7 +21,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool _isLoading = true;
   UserStats? _stats;
 
-  final List<String> _filters = ['Todos', 'VERIFICADAS', 'FAKE NEWS', 'Suspeitos'];
+  final List<String> _filters = const ['Todos', 'VERIFICADAS', 'FAKE NEWS', 'Suspeitos'];
 
   @override
   void initState() {
@@ -28,16 +29,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _loadData();
   }
 
+  // Dispose é essencial para evitar vazamento de memória do Controller
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
-    final verifications = await _verificationService.getUserVerifications();
-    final stats = await _verificationService.getUserStats();
-    
-    setState(() {
-      _allVerifications = verifications;
-      _filteredVerifications = verifications;
-      _stats = stats;
-      _isLoading = false;
-    });
+    // Adicionado tratamento de erro básico
+    try {
+      final verifications = await _verificationService.getUserVerifications();
+      final stats = await _verificationService.getUserStats();
+      
+      if (mounted) {
+        setState(() {
+          _allVerifications = verifications;
+          _filteredVerifications = verifications;
+          _stats = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _filterVerifications(String filter) {
@@ -45,17 +62,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _selectedFilter = filter;
       if (filter == 'Todos') {
         _filteredVerifications = _allVerifications;
-      } else if (filter == 'VERIFICADAS') {
+      } else {
+        // Mapeamento de status para simplificar o código
+        final statusMap = {
+          'VERIFICADAS': VerificationStatus.verified,
+          'FAKE NEWS': VerificationStatus.fakeNews,
+          'Suspeitos': VerificationStatus.suspicious,
+        };
+        
         _filteredVerifications = _allVerifications
-            .where((v) => v.status == VerificationStatus.verified)
-            .toList();
-      } else if (filter == 'FAKE NEWS') {
-        _filteredVerifications = _allVerifications
-            .where((v) => v.status == VerificationStatus.fakeNews)
-            .toList();
-      } else if (filter == 'Suspeitos') {
-        _filteredVerifications = _allVerifications
-            .where((v) => v.status == VerificationStatus.suspicious)
+            .where((v) => v.status == statusMap[filter])
             .toList();
       }
     });
@@ -108,7 +124,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: _searchVerifications,
-        style: const TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 14, color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Buscar no histórico...',
           hintStyle: TextStyle(color: Colors.grey.shade600),
@@ -129,17 +145,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Row(
         children: _filters.map((filter) {
           final isSelected = _selectedFilter == filter;
-          Color chipColor;
-          
-          if (filter == 'VERIFICADAS') {
-            chipColor = const Color(0xFF4CAF50);
-          } else if (filter == 'FAKE NEWS') {
-            chipColor = Colors.red;
-          } else if (filter == 'Suspeitos') {
-            chipColor = Colors.orange;
-          } else {
-            chipColor = Colors.blue;
-          }
+          final Color chipColor = _getFilterColor(filter);
 
           return GestureDetector(
             onTap: () => _filterVerifications(filter),
@@ -169,9 +175,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
+                        // Corrigido: withOpacity em vez de withValues (mais comum em versões estáveis)
                         color: isSelected 
-                            ? Colors.white.withValues(alpha: 0.2)
-                            : chipColor.withValues(alpha: 0.2),
+                            ? Colors.white.withOpacity(0.2)
+                            : chipColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -193,40 +200,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  Color _getFilterColor(String filter) {
+    switch (filter) {
+      case 'VERIFICADAS': return const Color(0xFF4CAF50);
+      case 'FAKE NEWS': return Colors.red;
+      case 'Suspeitos': return Colors.orange;
+      default: return Colors.blue;
+    }
+  }
+
   String _getFilterCount(String filter) {
     if (_stats == null) return '0';
     switch (filter) {
-      case 'VERIFICADAS':
-        return _stats!.verified.toString();
-      case 'FAKE NEWS':
-        return _stats!.fakeNews.toString();
-      case 'Suspeitos':
-        return _stats!.suspicious.toString();
-      default:
-        return _stats!.totalVerifications.toString();
+      case 'VERIFICADAS': return _stats!.verified.toString();
+      case 'FAKE NEWS': return _stats!.fakeNews.toString();
+      case 'Suspeitos': return _stats!.suspicious.toString();
+      default: return _stats!.totalVerifications.toString();
     }
   }
 
   Widget _buildStatsCards() {
     return Row(
       children: [
-        _buildStatCard(
-          _stats?.verified.toString() ?? '0',
-          'Verificados',
-          const Color(0xFF4CAF50),
-        ),
+        _buildStatCard(_stats?.verified.toString() ?? '0', 'Verificados', const Color(0xFF4CAF50)),
         const SizedBox(width: 10),
-        _buildStatCard(
-          _stats?.fakeNews.toString() ?? '0',
-          'Fake News',
-          Colors.red,
-        ),
+        _buildStatCard(_stats?.fakeNews.toString() ?? '0', 'Fake News', Colors.red),
         const SizedBox(width: 10),
-        _buildStatCard(
-          _stats?.suspicious.toString() ?? '0',
-          'Suspeitos',
-          Colors.orange,
-        ),
+        _buildStatCard(_stats?.suspicious.toString() ?? '0', 'Suspeitos', Colors.orange),
       ],
     );
   }
@@ -236,27 +236,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
+          color: color.withOpacity(0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
           children: [
             Text(
               value,
-              style: TextStyle(
-                color: color,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: color, fontSize: 11),
             ),
           ],
         ),
@@ -274,17 +267,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
             const SizedBox(height: 16),
             Text(
               'Nenhuma verificação encontrada',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
             ),
           ],
         ),
       );
     }
 
-    // Agrupa por data
     final grouped = _groupByDate(_filteredVerifications);
 
     return ListView.builder(
@@ -321,13 +310,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Map<String, List<VerificationItem>> _groupByDate(List<VerificationItem> items) {
     final Map<String, List<VerificationItem>> grouped = {};
-    
     for (var item in items) {
       final date = _getDateLabel(item.verifiedAt);
       grouped.putIfAbsent(date, () => []);
       grouped[date]!.add(item);
     }
-    
     return grouped;
   }
 
@@ -338,7 +325,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     
     if (itemDate == today) return 'Hoje';
     if (itemDate == today.subtract(const Duration(days: 1))) return 'Ontem';
-    
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
@@ -359,7 +345,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: item.status.color.withValues(alpha: 0.2),
+                  color: item.status.color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -380,48 +366,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                _formatTime(item.verifiedAt),
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 11,
-                ),
+                '${item.verifiedAt.hour.toString().padLeft(2, '0')}:${item.verifiedAt.minute.toString().padLeft(2, '0')}',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             item.content,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: item.status.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  item.status.label.toLowerCase(),
-                  style: TextStyle(
-                    color: item.status.color,
-                    fontSize: 11,
-                  ),
-                ),
+              Text(
+                item.status.label.toLowerCase(),
+                style: TextStyle(color: item.status.color, fontSize: 11),
               ),
               const SizedBox(width: 8),
               Text(
                 '${item.confidence}% confiança',
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 11,
-                ),
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
               ),
               const Spacer(),
               Icon(Icons.open_in_new, size: 16, color: Colors.grey.shade600),
@@ -432,15 +399,5 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ],
       ),
     );
-  }
-
-  String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 }

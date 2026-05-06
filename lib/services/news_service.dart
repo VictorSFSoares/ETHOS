@@ -10,7 +10,6 @@ class NewsService {
   final String _apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https://g1.globo.com/rss/g1/';
   List<NewsItem> _cachedNews = [];
   final List<NewsItem> _historyCache = [];
-  // NOVO: Lista para armazenar os favoritos em memória
   final List<NewsItem> _favoritesCache = [];
 
   Future<List<NewsItem>> getAllNews() async {
@@ -22,13 +21,15 @@ class NewsService {
         final List items = data['items'];
         
         _cachedNews = items.map((json) {
+          final title = json['title'] ?? '';
           return NewsItem(
             id: json['guid'] ?? DateTime.now().toString(),
-            title: json['title'] ?? '',
+            title: title,
             description: _cleanHtml(json['description'] ?? 'Sem descrição disponível.'),
             imageUrl: json['enclosure']?['link'] ?? 'https://via.placeholder.com/400',
             source: 'G1 Globo',
-            category: 'Geral',
+            // NOVO: Chamando a função para categorizar
+            category: _determineCategory(title),
             publishedAt: DateTime.parse(json['pubDate']),
             status: VerificationStatus.verified,
             confidence: 100,
@@ -42,6 +43,32 @@ class NewsService {
     }
   }
 
+  // NOVO: Lógica para definir a categoria baseada no título (Palavras mais comuns do G1)
+  String _determineCategory(String title) {
+    String lowerTitle = title.toLowerCase();
+    
+    if (lowerTitle.contains(RegExp(r'\b(lula|bolsonaro|stf|congresso|senado|câmara|política|governo|ministro|eleições|tse)\b'))) {
+      return 'Política';
+    }
+    if (lowerTitle.contains(RegExp(r'\b(dólar|bolsa|mercado|economia|inflação|juros|imposto|banco|bc|copom|impostos)\b'))) {
+      return 'Economia';
+    }
+    if (lowerTitle.contains(RegExp(r'\b(futebol|esporte|campeonato|libertadores|seleção|flamengo|corinthians|palmeiras|são paulo|vasco)\b'))) {
+      return 'Esportes';
+    }
+    if (lowerTitle.contains(RegExp(r'\b(eua|guerra|israel|gaza|rússia|ucrânia|mundo|internacional|biden|trump|putin)\b'))) {
+      return 'Mundo';
+    }
+    if (lowerTitle.contains(RegExp(r'\b(filme|série|música|show|cinema|televisão|famosos|bbb|globo|arte|pop)\b'))) {
+      return 'Pop & Arte';
+    }
+    if (lowerTitle.contains(RegExp(r'\b(polícia|acidente|chuva|trânsito|brasil|sp|rj|mg)\b'))) {
+      return 'Brasil';
+    }
+    
+    return 'Geral';
+  }
+
   void addToHistory(NewsItem news) {
     _historyCache.removeWhere((item) => item.id == news.id);
     _historyCache.insert(0, news);
@@ -51,16 +78,12 @@ class NewsService {
     return _historyCache;
   }
 
-  // NOVO: Método para buscar a lista de favoritos (Resolve erro no favorites_screen.dart)
   Future<List<NewsItem>> getFavoriteNews() async {
     return _favoritesCache;
   }
 
-  // NOVO: Método para alternar favorito (Resolve erro no favorites_screen e historycheck_screen)
   Future<void> toggleFavorite(String id) async {
-    // Busca a notícia em qualquer uma das listas para garantir que temos o objeto
     NewsItem? news;
-    
     try {
       news = _cachedNews.firstWhere((item) => item.id == id);
     } catch (_) {
@@ -70,7 +93,7 @@ class NewsService {
         try {
           news = _favoritesCache.firstWhere((item) => item.id == id);
         } catch (_) {
-          return; // Não achou a notícia
+          return; 
         }
       }
     }

@@ -14,6 +14,18 @@ class _NewsScreenState extends State<NewsScreen> {
   List<NewsItem> _allNews = [];
   bool _isLoading = true;
 
+  String _selectedCategory = 'Todas';
+  final List<String> _categories = [
+    'Todas',
+    'Brasil',
+    'Política',
+    'Economia',
+    'Mundo',
+    'Esportes',
+    'Pop & Arte',
+    'Geral'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +40,13 @@ class _NewsScreenState extends State<NewsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  List<NewsItem> get _filteredNews {
+    if (_selectedCategory == 'Todas') {
+      return _allNews;
+    }
+    return _allNews.where((news) => news.category == _selectedCategory).toList();
   }
 
   void _showNewsDetail(NewsItem news) {
@@ -45,21 +64,73 @@ class _NewsScreenState extends State<NewsScreen> {
       backgroundColor: Colors.black,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _allNews.length,
-              itemBuilder: (context, index) => _buildNewsItem(_allNews[index]),
+          : Column(
+              children: [
+                _buildCategoryFilter(),
+                Expanded(
+                  child: _filteredNews.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Nenhuma notícia para esta categoria hoje.',
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _filteredNews.length,
+                          itemBuilder: (context, index) =>
+                              _buildNewsItem(_filteredNews[index]),
+                        ),
+                ),
+              ],
             ),
+    );
+  }
+
+  Widget _buildCategoryFilter() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final category = _categories[index];
+          final isSelected = category == _selectedCategory;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(category),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() => _selectedCategory = category);
+                }
+              },
+              backgroundColor: const Color(0xFF1A1A1A),
+              selectedColor: const Color(0xFF4CAF50).withOpacity(0.3),
+              labelStyle: TextStyle(
+                color: isSelected ? const Color(0xFF4CAF50) : Colors.white70,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              side: BorderSide(
+                color: isSelected ? const Color(0xFF4CAF50) : Colors.grey.shade800,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildNewsItem(NewsItem news) {
     return Card(
-      // CORRIGIDO: de .bottom(16) para .only(bottom: 16)
-      margin: const EdgeInsets.only(bottom: 16), 
+      margin: const EdgeInsets.only(bottom: 16),
       color: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias, 
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           _newsService.addToHistory(news);
@@ -68,6 +139,7 @@ class _NewsScreenState extends State<NewsScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start, // Alinha os itens no topo
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -77,7 +149,9 @@ class _NewsScreenState extends State<NewsScreen> {
                   height: 90,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    width: 90, height: 90, color: Colors.grey.shade900,
+                    width: 90,
+                    height: 90,
+                    color: Colors.grey.shade900,
                     child: const Icon(Icons.image_not_supported, color: Colors.white24),
                   ),
                 ),
@@ -88,8 +162,20 @@ class _NewsScreenState extends State<NewsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
+                      news.category.toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFF4CAF50),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
                       news.title,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -102,6 +188,17 @@ class _NewsScreenState extends State<NewsScreen> {
                     ),
                   ],
                 ),
+              ),
+              // NOVO: Botão de Favoritar
+              IconButton(
+                icon: Icon(
+                  news.isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: news.isFavorite ? Colors.red : Colors.grey.shade600,
+                ),
+                onPressed: () async {
+                  await _newsService.toggleFavorite(news.id);
+                  setState(() {}); // Atualiza a tela para mudar a cor do coração
+                },
               ),
             ],
           ),
@@ -124,11 +221,23 @@ class _NewsScreenState extends State<NewsScreen> {
           controller: scrollController,
           children: [
             const SizedBox(height: 12),
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            Center(
+                child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 24),
-            Text(news.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(news.title,
+                style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
             const SizedBox(height: 12),
-            Text("${news.source} • Verificado", style: const TextStyle(color: Color(0xFF4CAF50), fontWeight: FontWeight.bold)),
+            Text("${news.source} • ${news.category}", 
+                style: const TextStyle(
+                    color: Color(0xFF4CAF50), fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -137,7 +246,8 @@ class _NewsScreenState extends State<NewsScreen> {
             const SizedBox(height: 24),
             Text(
               news.description,
-              style: const TextStyle(fontSize: 16, color: Colors.white70, height: 1.6),
+              style: const TextStyle(
+                  fontSize: 16, color: Colors.white70, height: 1.6),
             ),
             const SizedBox(height: 40),
           ],
