@@ -14,7 +14,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   bool _shareData = false;
   bool _twoFactorAuth = false;
   bool _biometricAuth = false;
-  
+
   int _selectedTab = 0;
 
   @override
@@ -46,7 +46,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         children: [
           _buildTabBar(),
           Expanded(
-            child: _selectedTab == 0 ? _buildPrivacyContent() : _buildPolicyContent(),
+            child: _selectedTab == 0
+                ? _buildPrivacyContent()
+                : _buildPolicyContent(),
           ),
         ],
       ),
@@ -68,7 +70,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _selectedTab == 0 ? const Color(0xFF4CAF50) : Colors.transparent,
+                  color: _selectedTab == 0
+                      ? const Color(0xFF4CAF50)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -88,7 +92,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _selectedTab == 1 ? const Color(0xFF4CAF50) : Colors.transparent,
+                  color: _selectedTab == 1
+                      ? const Color(0xFF4CAF50)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -408,7 +414,7 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFF4CAF50),
+        activeThumbColor: const Color(0xFF4CAF50),
       ),
     );
   }
@@ -424,7 +430,8 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (isDestructive ? Colors.red : const Color(0xFF4CAF50)).withOpacity(0.1),
+          color: (isDestructive ? Colors.red : const Color(0xFF4CAF50))
+              .withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -504,7 +511,8 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Baixar Meus Dados', style: TextStyle(color: Colors.white)),
+        title: const Text('Baixar Meus Dados',
+            style: TextStyle(color: Colors.white)),
         content: const Text(
           'Seus dados serão exportados em formato JSON e enviados para seu e-mail cadastrado. O processo pode levar até 24 horas.',
           style: TextStyle(color: Colors.grey),
@@ -512,7 +520,8 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -523,7 +532,9 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
                     children: [
                       Icon(Icons.check_circle, color: Color(0xFF4CAF50)),
                       SizedBox(width: 12),
-                      Expanded(child: Text('Solicitação enviada! Você receberá um e-mail em breve.')),
+                      Expanded(
+                          child: Text(
+                              'Solicitação enviada! Você receberá um e-mail em breve.')),
                     ],
                   ),
                   backgroundColor: Color(0xFF1A1A1A),
@@ -534,7 +545,8 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4CAF50),
             ),
-            child: const Text('Solicitar', style: TextStyle(color: Colors.black)),
+            child:
+                const Text('Solicitar', style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -561,7 +573,8 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -572,7 +585,9 @@ Seus dados podem ser transferidos para servidores localizados fora do Brasil, se
                     children: [
                       Icon(Icons.info, color: Colors.orange),
                       SizedBox(width: 12),
-                      Expanded(child: Text('Solicitação de exclusão enviada. Sua conta será removida em 30 dias.')),
+                      Expanded(
+                          child: Text(
+                              'Solicitação de exclusão enviada. Sua conta será removida em 30 dias.')),
                     ],
                   ),
                   backgroundColor: Color(0xFF1A1A1A),

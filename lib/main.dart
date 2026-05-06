@@ -4,12 +4,14 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Widgets e Services
-import 'widgets/header_widget.dart';
-import 'services/db_helper.dart'; 
-import 'services/user_service.dart'; 
+// IMPORTANTE: Adicione esta linha abaixo. Se o arquivo não existir, 
+// você precisa rodar 'flutterfire configure' no terminal.
+// import 'firebase_options.dart'; 
 
-// Screens (Removi os imports que não estavam sendo usados no código fornecido)
+import 'widgets/header_widget.dart';
+import 'services/db_helper.dart';
+import 'services/user_service.dart';
+
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/news_screen.dart';
@@ -26,11 +28,12 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // CORREÇÃO TÉCNICA: O Firebase DEVE ser esperado (await) antes do runApp
-  // para evitar erros de inicialização em telas que dependem de Auth.
+
+  // Inicialização correta do Firebase
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      // options: DefaultFirebaseOptions.currentPlatform, // Descomente após importar o firebase_options.dart
+    );
   } catch (e) {
     debugPrint("Erro ao iniciar Firebase: $e");
   }
@@ -61,8 +64,7 @@ class EthosApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      // Inicia na SplashScreen
-      home: const SplashScreen(), 
+      home: const SplashScreen(),
       routes: {
         '/settings': (context) => const SettingsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
@@ -75,7 +77,6 @@ class EthosApp extends StatelessWidget {
   }
 }
 
-// AuthWrapper: Decide se vai para Login ou Home
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -91,9 +92,9 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         if (snapshot.hasData) {
-          return const MainNavigation(); 
+          return const MainNavigation();
         }
-        return const LoginScreen(); 
+        return const LoginScreen();
       },
     );
   }
@@ -107,7 +108,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 2; 
+  int _currentIndex = 2;
 
   final List<Widget> _screens = const [
     VerifyScreen(),
@@ -120,7 +121,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    _syncUser(); 
+    _syncUser();
   }
 
   Future<void> _syncUser() async {

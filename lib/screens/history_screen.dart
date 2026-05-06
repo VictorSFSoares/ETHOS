@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
 import '../services/verification_service.dart';
-// Removido import do header_widget se não estiver sendo usado nesta tela específica
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -11,17 +10,22 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  // Instância única do serviço
   final VerificationService _verificationService = VerificationService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<VerificationItem> _allVerifications = [];
   List<VerificationItem> _filteredVerifications = [];
   String _selectedFilter = 'Todos';
   bool _isLoading = true;
   UserStats? _stats;
 
-  final List<String> _filters = const ['Todos', 'VERIFICADAS', 'FAKE NEWS', 'Suspeitos'];
+  // Definido como const para melhor performance
+  final List<String> _filters = const [
+    'Todos',
+    'VERIFICADAS',
+    'FAKE NEWS',
+    'Suspeitos'
+  ];
 
   @override
   void initState() {
@@ -29,7 +33,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _loadData();
   }
 
-  // Dispose é essencial para evitar vazamento de memória do Controller
   @override
   void dispose() {
     _searchController.dispose();
@@ -37,11 +40,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadData() async {
-    // Adicionado tratamento de erro básico
     try {
       final verifications = await _verificationService.getUserVerifications();
       final stats = await _verificationService.getUserStats();
-      
+
       if (mounted) {
         setState(() {
           _allVerifications = verifications;
@@ -52,6 +54,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
     } catch (e) {
       if (mounted) {
+        debugPrint("Erro ao carregar dados: $e");
         setState(() => _isLoading = false);
       }
     }
@@ -63,13 +66,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (filter == 'Todos') {
         _filteredVerifications = _allVerifications;
       } else {
-        // Mapeamento de status para simplificar o código
         final statusMap = {
           'VERIFICADAS': VerificationStatus.verified,
           'FAKE NEWS': VerificationStatus.fakeNews,
           'Suspeitos': VerificationStatus.suspicious,
         };
-        
+
         _filteredVerifications = _allVerifications
             .where((v) => v.status == statusMap[filter])
             .toList();
@@ -175,9 +177,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        // Corrigido: withOpacity em vez de withValues (mais comum em versões estáveis)
                         color: isSelected 
-                            ? Colors.white.withOpacity(0.2)
+                            ? Colors.white.withOpacity(0.2) 
                             : chipColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -247,10 +248,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(color: color, fontSize: 11),
-            ),
+            Text(label, style: TextStyle(color: color, fontSize: 11)),
           ],
         ),
       ),
@@ -322,7 +320,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final itemDate = DateTime(date.year, date.month, date.day);
-    
+
     if (itemDate == today) return 'Hoje';
     if (itemDate == today.subtract(const Duration(days: 1))) return 'Ontem';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
