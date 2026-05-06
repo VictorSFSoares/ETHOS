@@ -4,7 +4,7 @@ import '../services/economy_service.dart';
 import '../services/verification_service.dart';
 import '../services/news_service.dart';
 import 'historycheck_screen.dart';
-import 'news_screen.dart'; 
+import 'news_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,8 +15,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final VerificationService _verificationService = VerificationService();
-  final NewsService _newsService = NewsService(); 
-  
+  final NewsService _newsService = NewsService();
+
   List<VerificationItem> _recentVerifications = [];
   List<NewsItem> _latestNews = [];
   bool _isLoading = true;
@@ -30,8 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     // Carrega dados dos serviços
     final verifications = await _verificationService.getRecentVerifications();
-    final news = await _newsService.getAllNews(); 
-    
+    final news = await _newsService.getAllNews();
+
     if (mounted) {
       setState(() {
         _recentVerifications = verifications.take(3).toList();
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 24),
           _buildMarketRates(),
           const SizedBox(height: 24),
-          _buildDashboardNews(), 
+          _buildDashboardNews(),
           const SizedBox(height: 24),
           _buildTipsSection(),
           const SizedBox(height: 24),
@@ -85,14 +85,18 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(width: 10),
               Text(
                 'Ambiente Seguro',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             'Você está protegido pelo ETHOS. Fique atualizado e verifique conteúdos suspeitos.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
           ),
         ],
       ),
@@ -105,7 +109,8 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         const Text(
           'Acesso Rápido',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 16),
         SingleChildScrollView(
@@ -113,32 +118,41 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             children: [
               _buildQuickAction(
-                Icons.article, 
-                'Notícias', 
-                'Em alta', 
+                Icons.article,
+                'Notícias',
+                'Em alta',
                 Colors.blue,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NewsScreen())),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const NewsScreen())),
               ),
               _buildQuickAction(
-                Icons.trending_up, 
-                'Trending', 
-                'Mais lidos', 
+                Icons.trending_up,
+                'Trending',
+                'Mais lidos',
                 const Color(0xFF4CAF50),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NewsScreen())),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const NewsScreen())),
               ),
               _buildQuickAction(
-                Icons.star, 
-                'Favoritos', 
-                'Salvos', 
+                Icons.star,
+                'Favoritos',
+                'Salvos',
                 Colors.amber,
                 onTap: () => Navigator.pushNamed(context, '/favorites'),
               ),
               _buildQuickAction(
-                Icons.history, 
-                'Histórico', 
-                'Buscas', 
+                Icons.history,
+                'Histórico',
+                'Buscas',
                 Colors.purple,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryCheckScreen())),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const HistoryCheckScreen())),
               ),
             ],
           ),
@@ -147,21 +161,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickAction(IconData icon, String title, String subtitle, Color color, {VoidCallback? onTap}) {
+  Widget _buildQuickAction(
+      IconData icon, String title, String subtitle, Color color,
+      {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 100, 
-        height: 115, 
+        width: 100,
+        // height: 115, <-- REMOVE THIS LINE
         margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(
+            vertical: 16, horizontal: 8), // Adjust padding for vertical spacing
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade800),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, 
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize:
+              MainAxisSize.min, // Ensure column only takes necessary space
           children: [
             Container(
               padding: const EdgeInsets.all(10),
@@ -175,8 +194,11 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               title,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis, 
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Colors.white),
             ),
             const SizedBox(height: 2),
             Text(
@@ -197,23 +219,27 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         const Text(
           'Mercado em Tempo Real',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 12),
         FutureBuilder<List<CurrencyRate>>(
           future: EconomyService().getMarketRates(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)));
+              return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF4CAF50)));
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Text('Moedas indisponíveis no momento.', style: TextStyle(color: Colors.grey.shade600));
+              return Text('Moedas indisponíveis no momento.',
+                  style: TextStyle(color: Colors.grey.shade600));
             }
             final rates = snapshot.data!;
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: rates.map((rate) => _buildCurrencyCard(rate)).toList(),
+                children:
+                    rates.map((rate) => _buildCurrencyCard(rate)).toList(),
               ),
             );
           },
@@ -224,7 +250,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCurrencyCard(CurrencyRate rate) {
     final isPositive = rate.variation >= 0;
-    final color = isPositive ? const Color(0xFF4CAF50) : const Color(0xFFE53935);
+    final color =
+        isPositive ? const Color(0xFF4CAF50) : const Color(0xFFE53935);
     final icon = isPositive ? Icons.arrow_upward : Icons.arrow_downward;
 
     return Container(
@@ -239,11 +266,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(rate.name, style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+          Text(rate.name,
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
           const SizedBox(height: 8),
           Text(
             'R\$ ${rate.buyValue.toStringAsFixed(2)}',
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Row(
@@ -252,7 +281,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 4),
               Text(
                 '${rate.variation}%',
-                style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: color, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -270,16 +300,18 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const Text(
               'Últimas Notícias',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
             GestureDetector(
-              onTap: () => Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => const NewsScreen())
-              ),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const NewsScreen())),
               child: const Row(
                 children: [
-                  Text('Ver todas', style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
+                  Text('Ver todas',
+                      style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
                   SizedBox(width: 4),
                   Icon(Icons.arrow_forward, color: Color(0xFF4CAF50), size: 16),
                 ],
@@ -289,9 +321,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 16),
         if (_isLoading)
-          const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
+          const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
         else if (_latestNews.isEmpty)
-          Center(child: Text('Nenhuma notícia no momento.', style: TextStyle(color: Colors.grey.shade600)))
+          Center(
+              child: Text('Nenhuma notícia no momento.',
+                  style: TextStyle(color: Colors.grey.shade600)))
         else
           ..._latestNews.map((news) => _buildCompactNewsCard(news)),
       ],
@@ -308,76 +343,90 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        height: 80,
+        // height: 80, <-- REMOVE THIS LINE
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade800),
         ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(11)),
-              child: Image.network(
-                news.imageUrl,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
+        child: IntrinsicHeight(
+          // Ensures the row takes the height of the largest child
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment
+                .stretch, // Makes children stretch to match the tallest child
+            children: [
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(11)),
+                child: Image.network(
+                  news.imageUrl,
                   width: 80,
-                  height: 80,
-                  color: Colors.grey.shade900,
-                  child: const Icon(Icons.image, color: Colors.grey),
+                  // Remove fixed height here too, let it fill the stretch
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 80,
+                    color: Colors.grey.shade900,
+                    child: const Icon(Icons.image, color: Colors.grey),
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      news.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white, 
-                        fontSize: 13, 
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        news.title,
+                        maxLines: 3, // Allow up to 3 lines for the title
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
+                      const SizedBox(
+                          height:
+                              8), // Add some spacing between title and metadata
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50)
+                                  .withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Verificado',
+                              style: TextStyle(
+                                  color: Color(0xFF4CAF50),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
-                          child: const Text(
-                            'Verificado',
-                            style: TextStyle(color: Color(0xFF4CAF50), fontSize: 9, fontWeight: FontWeight.bold),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${news.source} · ${_formatTime(news.publishedAt)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 10),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${news.source} · ${_formatTime(news.publishedAt)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -408,7 +457,10 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   'Dica do dia',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white),
                 ),
                 SizedBox(height: 4),
                 Text(
@@ -429,7 +481,8 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         const Text(
           'Suas Verificações Recentes',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 16),
         if (_isLoading)
@@ -473,7 +526,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   item.content,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
