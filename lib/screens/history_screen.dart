@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
 import '../services/verification_service.dart';
-import '../widgets/header_widget.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -13,14 +12,19 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final VerificationService _verificationService = VerificationService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<VerificationItem> _allVerifications = [];
   List<VerificationItem> _filteredVerifications = [];
   String _selectedFilter = 'Todos';
   bool _isLoading = true;
   UserStats? _stats;
 
-  final List<String> _filters = ['Todos', 'VERIFICADAS', 'FAKE NEWS', 'Suspeitos'];
+  final List<String> _filters = [
+    'Todos',
+    'VERIFICADAS',
+    'FAKE NEWS',
+    'Suspeitos'
+  ];
 
   @override
   void initState() {
@@ -31,7 +35,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _loadData() async {
     final verifications = await _verificationService.getUserVerifications();
     final stats = await _verificationService.getUserStats();
-    
+
     setState(() {
       _allVerifications = verifications;
       _filteredVerifications = verifications;
@@ -130,7 +134,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: _filters.map((filter) {
           final isSelected = _selectedFilter == filter;
           Color chipColor;
-          
+
           if (filter == 'VERIFICADAS') {
             chipColor = const Color(0xFF4CAF50);
           } else if (filter == 'FAKE NEWS') {
@@ -161,15 +165,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: TextStyle(
                       color: isSelected ? Colors.white : Colors.grey.shade400,
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                   if (filter != 'Todos') ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: isSelected 
+                        color: isSelected
                             ? Colors.white.withValues(alpha: 0.2)
                             : chipColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
@@ -299,7 +305,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
-                  Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
+                  Icon(Icons.access_time,
+                      size: 14, color: Colors.grey.shade600),
                   const SizedBox(width: 6),
                   Text(
                     entry.key,
@@ -319,15 +326,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Map<String, List<VerificationItem>> _groupByDate(List<VerificationItem> items) {
+  Map<String, List<VerificationItem>> _groupByDate(
+      List<VerificationItem> items) {
     final Map<String, List<VerificationItem>> grouped = {};
-    
+
     for (var item in items) {
       final date = _getDateLabel(item.verifiedAt);
       grouped.putIfAbsent(date, () => []);
       grouped[date]!.add(item);
     }
-    
+
     return grouped;
   }
 
@@ -335,10 +343,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final itemDate = DateTime(date.year, date.month, date.day);
-    
+
     if (itemDate == today) return 'Hoje';
     if (itemDate == today.subtract(const Duration(days: 1))) return 'Ontem';
-    
+
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 

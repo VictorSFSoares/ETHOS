@@ -172,8 +172,8 @@ class _EthosShieldPainter extends CustomPainter {
     path.lineTo(size.width * 0.96, size.height * 0.52);
     path.quadraticBezierTo(
         size.width * 0.96, size.height * 0.85, cx, size.height * 0.97);
-    path.quadraticBezierTo(
-        size.width * 0.04, size.height * 0.85, size.width * 0.04, size.height * 0.52);
+    path.quadraticBezierTo(size.width * 0.04, size.height * 0.85,
+        size.width * 0.04, size.height * 0.52);
     path.lineTo(size.width * 0.04, size.height * 0.18);
     path.close();
     return path;
@@ -233,8 +233,10 @@ class _EthosShieldPainter extends CustomPainter {
 
     // ── Document lines ────────────────────────────────────────────────────────
     final docRect = Rect.fromLTWH(
-      size.width * 0.29, size.height * 0.28,
-      size.width * 0.42, size.height * 0.38,
+      size.width * 0.29,
+      size.height * 0.28,
+      size.width * 0.42,
+      size.height * 0.38,
     );
     final docPaint = Paint()
       ..color = const Color(0xFF172418).withOpacity(0.55)
@@ -262,7 +264,8 @@ class _EthosShieldPainter extends CustomPainter {
     // ── Sheen sweep ───────────────────────────────────────────────────────────
     if (sheenProgress > 0 && sheenProgress < 1) {
       final sheenX = -size.width * 0.5 + sheenProgress * size.width * 2.2;
-      final sheenRect = Rect.fromLTWH(sheenX, 0, size.width * 0.38, size.height);
+      final sheenRect =
+          Rect.fromLTWH(sheenX, 0, size.width * 0.38, size.height);
       final sheenGrad = LinearGradient(
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
@@ -273,8 +276,7 @@ class _EthosShieldPainter extends CustomPainter {
         ],
         stops: const [0.0, 0.5, 1.0],
       );
-      final sheenPaint = Paint()
-        ..shader = sheenGrad.createShader(sheenRect);
+      final sheenPaint = Paint()..shader = sheenGrad.createShader(sheenRect);
 
       // Skew the sheen slightly
       canvas.save();

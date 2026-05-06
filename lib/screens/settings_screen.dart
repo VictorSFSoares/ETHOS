@@ -83,7 +83,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Notificações Push',
                 subtitle: 'Receber alertas no dispositivo',
                 value: _pushNotifications,
-                onChanged: (value) => setState(() => _pushNotifications = value),
+                onChanged: (value) =>
+                    setState(() => _pushNotifications = value),
               ),
               _buildDivider(),
               _buildSwitchTile(
@@ -91,7 +92,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Notificações por E-mail',
                 subtitle: 'Receber atualizações por e-mail',
                 value: _emailNotifications,
-                onChanged: (value) => setState(() => _emailNotifications = value),
+                onChanged: (value) =>
+                    setState(() => _emailNotifications = value),
               ),
               _buildDivider(),
               _buildSwitchTile(
@@ -223,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFF4CAF50),
+        activeThumbColor: const Color(0xFF4CAF50),
       ),
     );
   }
@@ -282,7 +284,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title,
         style: const TextStyle(color: Colors.white, fontSize: 14),
       ),
-      trailing: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.shade600),
+      trailing:
+          Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.shade600),
       onTap: onTap,
     );
   }
@@ -325,7 +328,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Editar Perfil', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Editar Perfil', style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -367,7 +371,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -390,7 +395,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Alterar Senha', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Alterar Senha', style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -449,7 +455,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -472,7 +479,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Limpar Cache', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Limpar Cache', style: TextStyle(color: Colors.white)),
         content: const Text(
           'Deseja limpar o cache do aplicativo? Isso pode liberar espaço de armazenamento.',
           style: TextStyle(color: Colors.grey),
@@ -480,7 +488,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -503,7 +512,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Limpar Histórico', style: TextStyle(color: Colors.white)),
+        title: const Text('Limpar Histórico',
+            style: TextStyle(color: Colors.white)),
         content: const Text(
           'Deseja limpar todo o histórico de verificações? Esta ação não pode ser desfeita.',
           style: TextStyle(color: Colors.grey),
@@ -511,7 +521,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade400)),
           ),
           ElevatedButton(
             onPressed: () {
