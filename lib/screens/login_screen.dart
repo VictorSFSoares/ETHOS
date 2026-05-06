@@ -60,7 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.shield, size: 80, color: Color(0xFF4CAF50)),
+              // Logo adicionada aqui com altura controlada
+              Image.asset(
+                'assets/Ethos.png',
+                height: 120, 
+              ),
               const SizedBox(height: 32),
               TextField(
                 controller: _emailController,
