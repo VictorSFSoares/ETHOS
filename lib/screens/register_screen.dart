@@ -59,47 +59,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(title: const Text('Criar Conta ETHOS')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nome Completo',
-                border: OutlineInputBorder(),
+        child: SingleChildScrollView( // Adicionado para evitar overflow na tela caso o teclado abra
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+              // Logo adicionada aqui também
+              Image.asset(
+                'assets/Ethos.png',
+                height: 100, // Um pouco menor que na tela de login para poupar espaço
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 32),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome Completo',
+                  border: OutlineInputBorder(),
+                ),
               ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Senha',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
               ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 24),
-            _isLoading
-                ? const CircularProgressIndicator(color: Color(0xFF4CAF50))
-                : ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
-                      minimumSize: const Size(double.infinity, 50),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Senha',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 24),
+              _isLoading
+                  ? const CircularProgressIndicator(color: Color(0xFF4CAF50))
+                  : ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      onPressed: _register,
+                      child: const Text('Cadastrar',
+                          style: TextStyle(color: Colors.white, fontSize: 18)),
                     ),
-                    onPressed: _register,
-                    child: const Text('Cadastrar',
-                        style: TextStyle(color: Colors.white, fontSize: 18)),
-                  ),
-          ],
+            ],
+          ),
         ),
       ),
     );
