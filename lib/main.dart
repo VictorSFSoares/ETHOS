@@ -5,8 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'widgets/header_widget.dart';
-import 'services/db_helper.dart'; 
-import 'services/user_service.dart'; 
+import 'services/db_helper.dart';
+import 'services/user_service.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
@@ -22,11 +22,10 @@ import 'screens/favorites_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
-
 void main() async {
   // 1. Liga o motor do Flutter
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 2. Inicia o Firebase em "segundo plano" (sem o await!)
   Firebase.initializeApp().catchError((e) => print(e));
 
@@ -59,7 +58,7 @@ class EthosApp extends StatelessWidget {
         ),
       ),
       // --- ALTERADO AQUI: O app agora inicia no Vídeo ---
-      home: const SplashScreen(), 
+      home: const SplashScreen(),
       // ------------------------------------------------
       routes: {
         '/settings': (context) => const SettingsScreen(),
@@ -89,9 +88,9 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         if (snapshot.hasData) {
-          return const MainNavigation(); 
+          return const MainNavigation();
         }
-        return const LoginScreen(); 
+        return const LoginScreen();
       },
     );
   }
@@ -105,7 +104,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 2; 
+  int _currentIndex = 2;
 
   final List<Widget> _screens = [
     const VerifyScreen(),
@@ -118,7 +117,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    _syncUser(); 
+    _syncUser();
   }
 
   Future<void> _syncUser() async {
