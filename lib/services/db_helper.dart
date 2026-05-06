@@ -20,6 +20,7 @@ class DBHelper {
       path,
       version: 1,
       onCreate: (db, version) async {
+        // Tabela de perfis
         await db.execute('''
           CREATE TABLE profiles(
             email TEXT PRIMARY KEY,
@@ -27,6 +28,9 @@ class DBHelper {
             avatar_path TEXT
           )
         ''');
+
+        // Futuramente, quando criar o histórico local,
+        // adicione a criação da tabela 'history' aqui.
       },
     );
   }
@@ -59,5 +63,20 @@ class DBHelper {
       {'email': email, 'name': name, 'avatar_path': avatarPath},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  // ---> NOVA FUNÇÃO ADICIONADA AQUI <---
+  Future<int> getHistoryCount(String email) async {
+    final db = await database;
+    try {
+      // Tenta contar as verificações na tabela history
+      final result = await db
+          .rawQuery('SELECT COUNT(*) FROM history WHERE email = ?', [email]);
+      int count = Sqflite.firstIntValue(result) ?? 0;
+      return count;
+    } catch (e) {
+      // Se a tabela 'history' ainda não existir, retorna 0 de forma segura
+      return 0;
+    }
   }
 }
