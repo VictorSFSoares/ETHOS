@@ -4,7 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:intl/intl.dart'; // Necessário para formatar a data
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart'; // <-- IMPORTANTE: Para carregar o pt-BR
 import '../services/db_helper.dart';
 import '../services/user_service.dart';
 
@@ -22,7 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   String _avatarPath = '';
-  int _verificationsCount = 0; // Quantidade de checagens
+  int _verificationsCount = 0;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -30,6 +31,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    // Inicializa o formato de datas para Português do Brasil
+    initializeDateFormatting('pt_BR', null);
     _loadProfile();
   }
 
@@ -38,9 +41,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (email != null) {
       final profile = await _dbHelper.getProfile(email);
-
-      // Busca a quantidade de histórico/verificações no banco (se você já tiver essa tabela)
-      // Substitua 'history' pelo nome da sua tabela se for diferente
       final historyCount = await _dbHelper.getHistoryCount(email);
 
       if (profile != null && mounted) {
@@ -99,11 +99,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     UserService().clearUser();
   }
 
-  // --- Função para buscar e formatar a data de criação do Firebase ---
+  // --- Função com a data 100% em pt-BR ---
   String get _formattedCreationDate {
     if (currentUser?.metadata.creationTime != null) {
-      // Formata a data para algo como "15 Abr 2026"
-      return DateFormat('dd MMM yyyy')
+      // O 'pt_BR' garante que os meses apareçam como abr, mai, jun, etc.
+      return DateFormat("dd 'de' MMM 'de' yyyy", 'pt_BR')
           .format(currentUser!.metadata.creationTime!);
     }
     return 'Desconhecida';
@@ -116,7 +116,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ---- ZONA DA FOTO DE PERFIL ----
           GestureDetector(
             onTap: _pickImage,
             child: Stack(
@@ -144,8 +143,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // ---- PAINEL DE ESTATÍSTICAS (NOVO) ----
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -159,27 +156,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 _buildStatColumn(
                     'Verificações', '$_verificationsCount', Icons.shield),
-                Container(
-                    width: 1,
-                    height: 40,
-                    color: Colors.grey.shade800), // Linha divisória
+                Container(width: 1, height: 40, color: Colors.grey.shade800),
                 _buildStatColumn('Membro desde', _formattedCreationDate,
                     Icons.calendar_today),
               ],
             ),
           ),
           const SizedBox(height: 32),
-
-          // ---- CAMPOS DE DADOS ----
           _buildTextField('Nome Completo', _nameController, Icons.badge,
               readOnly: false),
           const SizedBox(height: 16),
           _buildTextField('E-mail (Login)', _emailController, Icons.email,
               readOnly: true),
-
           const SizedBox(height: 32),
-
-          // ---- BOTÃO DE SALVAR ----
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -198,8 +187,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // ---- BOTÃO DE SAIR ----
           TextButton.icon(
             onPressed: _logout,
             icon: const Icon(Icons.logout, color: Colors.redAccent),
@@ -211,7 +198,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ---- WIDGET PARA OS CARDS DE ESTATÍSTICA ----
   Widget _buildStatColumn(String label, String value, IconData icon) {
     return Column(
       children: [
@@ -229,7 +215,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ---- WIDGET PARA OS CAMPOS DE TEXTO ----
   Widget _buildTextField(
       String label, TextEditingController controller, IconData icon,
       {bool readOnly = false}) {
