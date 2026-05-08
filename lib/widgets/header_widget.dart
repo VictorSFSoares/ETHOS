@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import '../screens/profile_screen.dart'; 
+import 'hamburger_menu.dart'; 
 
 class HeaderWidget extends StatelessWidget {
+  final String title;
   final bool showBackButton;
-  final String? title;
-  final VoidCallback? onBackPressed;
 
   const HeaderWidget({
     super.key,
+    required this.title,
     this.showBackButton = false,
-    this.title,
-    this.onBackPressed,
   });
 
   @override
@@ -17,77 +17,103 @@ class HeaderWidget extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // LADO ESQUERDO: Logo e Textos
         Row(
           children: [
-            if (showBackButton) ...[
-              GestureDetector(
-                onTap: onBackPressed ?? () => Navigator.pop(context),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.arrow_back, size: 20),
-                ),
-              ),
-              const SizedBox(width: 12),
-            ],
+            // Quadrado verde com o ícone de Check
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: const Color(0xFF4CAF50),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.check,
-                color: Colors.black,
-                size: 20,
-              ),
+              child: const Icon(Icons.check, color: Colors.black, size: 28),
             ),
             const SizedBox(width: 12),
+            // Títulos
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title ?? 'ETHOS',
-                  style: const TextStyle(
+                const Text(
+                  'ETHOS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 Text(
                   'Portal de verificação',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
+                    color: Colors.grey.shade400,
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ],
         ),
+        
+        // LADO DIREITO: Os 3 botões interativos
         Row(
           children: [
-            _buildIconButton(Icons.person_outline),
+            // 1. Botão de Perfil
+            _buildHeaderButton(
+              icon: Icons.person_outline,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+              },
+            ),
             const SizedBox(width: 8),
-            _buildIconButton(Icons.notifications_outlined),
+            
+            // 2. Botão de Notificações
+            _buildHeaderButton(
+              icon: Icons.notifications_none,
+              onTap: () {
+                // Redireciona para a tela usando a rota mapeada no main.dart
+                Navigator.pushNamed(context, '/notifications');
+              },
+            ),
             const SizedBox(width: 8),
-            _buildIconButton(Icons.menu),
+            
+            // 3. Menu Hambúrguer
+            _buildHeaderButton(
+              icon: Icons.menu,
+              onTap: () {
+                // Abre o menu hambúrguer desenhado no passo anterior
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const HamburgerMenu(),
+                );
+              },
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildIconButton(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+  // Função atualizada COM animação de clique nativa do Flutter
+  Widget _buildHeaderButton({required IconData icon, required VoidCallback onTap}) {
+    return Material(
+      color: const Color(0xFF1A1A1A), // Cor de fundo do botão
+      borderRadius: BorderRadius.circular(10), // Bordas arredondadas
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10), // Garante que o clique respeite a borda
+        splashColor: const Color(0xFF4CAF50).withOpacity(0.3), // Efeito verde ao clicar
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
       ),
-      child: Icon(icon, size: 20, color: Colors.grey.shade400),
     );
   }
 }

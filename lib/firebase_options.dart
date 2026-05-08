@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'ethos-6c24a.firebasestorage.app',
     measurementId: 'G-B4JRD03N6N',
   );
+
 }

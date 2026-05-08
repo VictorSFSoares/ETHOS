@@ -111,89 +111,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          GestureDetector(
-            onTap: _pickImage,
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                CircleAvatar(
-                  radius: 60,
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  backgroundImage:
-                      _avatarPath.isNotEmpty && File(_avatarPath).existsSync()
-                          ? FileImage(File(_avatarPath))
-                          : null,
-                  child: _avatarPath.isEmpty || !File(_avatarPath).existsSync()
-                      ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                      : null,
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                      color: Color(0xFF4CAF50), shape: BoxShape.circle),
-                  child: const Icon(Icons.camera_alt,
-                      color: Colors.black, size: 20),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: const Color(0xFF4CAF50).withOpacity(0.3), width: 1),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStatColumn(
-                    'Verificações', '$_verificationsCount', Icons.shield),
-                Container(width: 1, height: 40, color: Colors.grey.shade800),
-                _buildStatColumn('Membro desde', _formattedCreationDate,
-                    Icons.calendar_today),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          _buildTextField('Nome Completo', _nameController, Icons.badge,
-              readOnly: false),
-          const SizedBox(height: 16),
-          _buildTextField('E-mail (Login)', _emailController, Icons.email,
-              readOnly: true),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+    // Verifica se a tela foi aberta pelo botão do topo (pode voltar) ou pela barra inferior
+    final bool isPushed = Navigator.canPop(context);
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      // Só mostra a AppBar com a seta de voltar se foi aberta pelo Header
+      appBar: isPushed
+          ? AppBar(
+              backgroundColor: Colors.black,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
               ),
-              onPressed: () => _saveProfile(),
-              child: const Text('Salvar Alterações',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16)),
+            )
+          : null,
+      // O seu código original continua igualzinho aqui dentro do body:
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: _pickImage,
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: const Color(0xFF1A1A1A),
+                    backgroundImage:
+                        _avatarPath.isNotEmpty && File(_avatarPath).existsSync()
+                            ? FileImage(File(_avatarPath))
+                            : null,
+                    child: _avatarPath.isEmpty || !File(_avatarPath).existsSync()
+                        ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                        : null,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                        color: Color(0xFF4CAF50), shape: BoxShape.circle),
+                    child: const Icon(Icons.camera_alt,
+                        color: Colors.black, size: 20),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, color: Colors.redAccent),
-            label: const Text('Sair da Conta',
-                style: TextStyle(color: Colors.redAccent, fontSize: 16)),
-          )
-        ],
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: const Color(0xFF4CAF50).withOpacity(0.3), width: 1),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStatColumn(
+                      'Verificações', '$_verificationsCount', Icons.shield),
+                  Container(width: 1, height: 40, color: Colors.grey.shade800),
+                  _buildStatColumn('Membro desde', _formattedCreationDate,
+                      Icons.calendar_today),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            _buildTextField('Nome Completo', _nameController, Icons.badge,
+                readOnly: false),
+            const SizedBox(height: 16),
+            _buildTextField('E-mail (Login)', _emailController, Icons.email,
+                readOnly: true),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4CAF50),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => _saveProfile(),
+                child: const Text('Salvar Alterações',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout, color: Colors.redAccent),
+              label: const Text('Sair da Conta',
+                  style: TextStyle(color: Colors.redAccent, fontSize: 16)),
+            )
+          ],
+        ),
       ),
     );
   }
