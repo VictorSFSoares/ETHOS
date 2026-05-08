@@ -1,12 +1,13 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// IMPORTANTE: Adicione esta linha abaixo. Se o arquivo não existir, 
-// você precisa rodar 'flutterfire configure' no terminal.
-// import 'firebase_options.dart'; 
+import 'firebase_options.dart'; 
 
 import 'widgets/header_widget.dart';
 import 'services/db_helper.dart';
@@ -29,10 +30,18 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // --- CONFIGURAÇÃO DO BANCO DE DADOS PARA PC ---
+  // Verifica se não é Web e se está rodando no Windows ou Linux
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+  // ----------------------------------------------
+
   // Inicialização correta do Firebase
   try {
     await Firebase.initializeApp(
-      // options: DefaultFirebaseOptions.currentPlatform, // Descomente após importar o firebase_options.dart
+      options: DefaultFirebaseOptions.currentPlatform,
     );
   } catch (e) {
     debugPrint("Erro ao iniciar Firebase: $e");
@@ -42,7 +51,6 @@ void main() async {
 
   runApp(const EthosApp());
 }
-
 class EthosApp extends StatelessWidget {
   const EthosApp({super.key});
 
