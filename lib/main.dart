@@ -4,9 +4,7 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// IMPORTANTE: Adicione esta linha abaixo. Se o arquivo não existir, 
-// você precisa rodar 'flutterfire configure' no terminal.
-// import 'firebase_options.dart'; 
+import 'firebase_options.dart'; 
 
 import 'widgets/header_widget.dart';
 import 'services/db_helper.dart';
@@ -32,7 +30,7 @@ void main() async {
   // Inicialização correta do Firebase
   try {
     await Firebase.initializeApp(
-      // options: DefaultFirebaseOptions.currentPlatform, // Descomente após importar o firebase_options.dart
+      options: DefaultFirebaseOptions.currentPlatform, // Parâmetro descomentado
     );
   } catch (e) {
     debugPrint("Erro ao iniciar Firebase: $e");
