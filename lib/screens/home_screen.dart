@@ -28,10 +28,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    // Carrega dados dos serviços
-    final verifications = await _verificationService.getRecentVerifications();
-    final news = await _newsService.getAllNews();
+    List<VerificationItem> verifications = [];
+    List<NewsItem> news = [];
 
+    // 1. Tenta carregar as verificações recentes
+    try {
+      verifications = await _verificationService.getRecentVerifications();
+    } catch (e) {
+      print("Erro ao carregar verificações: $e");
+      // Se o índice ainda estiver sendo criado, a lista continuará vazia
+    }
+
+    // 2. Tenta carregar as notícias de forma independente
+    try {
+      news = await _newsService.getAllNews();
+    } catch (e) {
+      print("Erro ao carregar notícias: $e");
+    }
+
+    // 3. Atualiza a interface e encerra o carregamento infinito
     if (mounted) {
       setState(() {
         _recentVerifications = verifications.take(3).toList();
