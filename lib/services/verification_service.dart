@@ -8,6 +8,7 @@ class VerificationService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // 🔴 COLA A TUA API KEY DO GEMINI AQUI ENTRE AS ASPAS:
+  // Lembrete: Por segurança, no futuro, mova isso para um arquivo .env!
   static const String _apiKey = 'AIzaSyAnfm5jnl7MnvGqnbJKZt-KHN59xG_dWJk';
 
   // 1. Envia para a IA e guarda no Firebase
@@ -58,7 +59,7 @@ class VerificationService {
       'usuario_email': _auth.currentUser?.email ?? 'Usuário',
       'conteudo': conteudo,
       'tipo': tipo,
-      'status': 'concluido',
+      'status': 'pendente', // Mantido como você enviou
       'veredito': vereditoFinal,
       'confianca': 95,
       'detalhes': detalhesFinal,
@@ -96,6 +97,17 @@ class VerificationService {
     return snapshot.docs.map((doc) => _mapDocToItem(doc)).toList();
   }
 
+  // 4.1. NOVO: Escuta TODO O HISTÓRICO EM TEMPO REAL
+  Stream<List<VerificationItem>> ouvirUserVerifications() {
+    return _db
+        .collection('verificacoes')
+        .where('usuario_id', isEqualTo: _auth.currentUser?.uid)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => _mapDocToItem(doc)).toList());
+  }
+
   // 5. Buscar ESTATÍSTICAS do Usuário (Para o Perfil)
   Future<UserStats> getUserStats() async {
     final snapshot = await _db
@@ -107,12 +119,13 @@ class VerificationService {
 
     for (var doc in snapshot.docs) {
       final veredito = doc.data()['veredito'];
-      if (veredito == 'verdadeiro')
+      if (veredito == 'verdadeiro') {
         verified++;
-      else if (veredito == 'falso')
+      } else if (veredito == 'falso') {
         fakeNews++;
-      else
+      } else {
         suspicious++;
+      }
     }
 
     return UserStats(
@@ -141,9 +154,7 @@ class VerificationService {
   VerificationStatus _internalMapStatus(String? status, String? veredito) {
     if (status == 'pendente') return VerificationStatus.pending;
     if (veredito == 'verdadeiro') return VerificationStatus.verified;
-    if (veredito == 'falso')
-      return VerificationStatus
-          .fakeNews; // FakeNews para bater certo com o data_models
+    if (veredito == 'falso') return VerificationStatus.fakeNews; 
     return VerificationStatus.suspicious;
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
 import '../services/verification_service.dart';
@@ -12,14 +13,14 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final VerificationService _verificationService = VerificationService();
   final TextEditingController _searchController = TextEditingController();
-
+  
+  StreamSubscription? _historySubscription;
   List<VerificationItem> _allVerifications = [];
   List<VerificationItem> _filteredVerifications = [];
   String _selectedFilter = 'Todos';
   bool _isLoading = true;
   UserStats? _stats;
 
-  // Definido como const para melhor performance
   final List<String> _filters = const [
     'Todos',
     'VERIFICADAS',
@@ -30,66 +31,164 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _startListening();
   }
 
   @override
   void dispose() {
+    _historySubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    try {
-      final verifications = await _verificationService.getUserVerifications();
+  // Inicia a escuta em tempo real
+  void _startListening() {
+    _historySubscription = _verificationService.ouvirUserVerifications().listen((data) async {
+      // Sempre que os dados mudarem no Firebase, este bloco executa:
       final stats = await _verificationService.getUserStats();
-
+      
       if (mounted) {
         setState(() {
-          _allVerifications = verifications;
-          _filteredVerifications = verifications;
+          _allVerifications = data;
           _stats = stats;
           _isLoading = false;
+          // Aplica o filtro atual aos novos dados recebidos
+          _applyCurrentFilters();
         });
       }
-    } catch (e) {
-      if (mounted) {
-        debugPrint("Erro ao carregar dados: $e");
-        setState(() => _isLoading = false);
-      }
+    }, onError: (e) {
+      debugPrint("Erro no Stream de Histórico: $e");
+      if (mounted) setState(() => _isLoading = false);
+    });
+  }
+
+  void _applyCurrentFilters() {
+    String query = _searchController.text.toLowerCase();
+    
+    List<VerificationItem> temp = _allVerifications;
+
+    // 1. Filtro por Categoria/Status
+    if (_selectedFilter != 'Todos') {
+      final statusMap = {
+        'VERIFICADAS': VerificationStatus.verified,
+        'FAKE NEWS': VerificationStatus.fakeNews,
+        'Suspeitos': VerificationStatus.suspicious,
+      };
+      temp = temp.where((v) => v.status == statusMap[_selectedFilter]).toList();
     }
-  }
 
-  void _filterVerifications(String filter) {
+    // 2. Filtro por Busca de Texto
+    if (query.isNotEmpty) {
+      temp = temp.where((v) => v.content.toLowerCase().contains(query)).toList();
+    }
+
     setState(() {
-      _selectedFilter = filter;
-      if (filter == 'Todos') {
-        _filteredVerifications = _allVerifications;
-      } else {
-        final statusMap = {
-          'VERIFICADAS': VerificationStatus.verified,
-          'FAKE NEWS': VerificationStatus.fakeNews,
-          'Suspeitos': VerificationStatus.suspicious,
-        };
-
-        _filteredVerifications = _allVerifications
-            .where((v) => v.status == statusMap[filter])
-            .toList();
-      }
+      _filteredVerifications = temp;
     });
   }
 
-  void _searchVerifications(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filterVerifications(_selectedFilter);
-      } else {
-        _filteredVerifications = _allVerifications
-            .where((v) => v.content.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      }
-    });
+  // --- LÓGICA DE DETALHES (ACESSAR POR EXTENSO) ---
+  
+  void _showDetails(VerificationItem item) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Icon(item.status.icon, color: item.status.color, size: 28),
+                  const SizedBox(width: 12),
+                  Text(
+                    item.status.label.toUpperCase(),
+                    style: TextStyle(
+                      color: item.status.color,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'CONTEÚDO ANALISADO',
+                style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.content,
+                style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+              ),
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 24),
+              const Text(
+                'PARECER DOS ESPECIALISTAS ETHOS',
+                style: TextStyle(color: Color(0xFF4CAF50), fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                item.details ?? 'Esta verificação ainda está a ser processada pela nossa equipa técnica. Volte a consultar em breve.',
+                style: TextStyle(
+                  color: Colors.grey.shade300,
+                  fontSize: 15,
+                  height: 1.6,
+                  fontStyle: item.details == null ? FontStyle.italic : FontStyle.normal,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildDetailMiniCard('Confiança', '${item.confidence}%'),
+                  _buildDetailMiniCard('Tipo', item.type.toUpperCase()),
+                  _buildDetailMiniCard('Data', '${item.verifiedAt.day}/${item.verifiedAt.month}'),
+                ],
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+
+  Widget _buildDetailMiniCard(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  // --- WIDGETS DE INTERFACE MANTIDOS ---
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +208,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
               : _buildVerificationList(),
         ),
       ],
@@ -125,17 +224,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: TextField(
         controller: _searchController,
-        onChanged: _searchVerifications,
+        onChanged: (_) => _applyCurrentFilters(),
         style: const TextStyle(fontSize: 14, color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Buscar no histórico...',
           hintStyle: TextStyle(color: Colors.grey.shade600),
           prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
@@ -150,49 +246,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
           final Color chipColor = _getFilterColor(filter);
 
           return GestureDetector(
-            onTap: () => _filterVerifications(filter),
+            onTap: () {
+              setState(() => _selectedFilter = filter);
+              _applyCurrentFilters();
+            },
             child: Container(
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected ? chipColor : const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected ? chipColor : Colors.grey.shade700,
-                ),
+                border: Border.all(color: isSelected ? chipColor : Colors.grey.shade700),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    filter,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey.shade400,
-                      fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                  if (filter != 'Todos') ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: isSelected 
-                            ? Colors.white.withOpacity(0.2) 
-                            : chipColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        _getFilterCount(filter),
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : chipColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                filter,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.grey.shade400,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
             ),
           );
@@ -207,16 +279,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'FAKE NEWS': return Colors.red;
       case 'Suspeitos': return Colors.orange;
       default: return Colors.blue;
-    }
-  }
-
-  String _getFilterCount(String filter) {
-    if (_stats == null) return '0';
-    switch (filter) {
-      case 'VERIFICADAS': return _stats!.verified.toString();
-      case 'FAKE NEWS': return _stats!.fakeNews.toString();
-      case 'Suspeitos': return _stats!.suspicious.toString();
-      default: return _stats!.totalVerifications.toString();
     }
   }
 
@@ -243,10 +305,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         child: Column(
           children: [
-            Text(
-              value,
-              style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+            Text(value, style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(label, style: TextStyle(color: color, fontSize: 11)),
           ],
@@ -263,10 +322,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           children: [
             Icon(Icons.history, size: 64, color: Colors.grey.shade700),
             const SizedBox(height: 16),
-            Text(
-              'Nenhuma verificação encontrada',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-            ),
+            Text('Nenhuma verificação encontrada', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
           ],
         ),
       );
@@ -284,20 +340,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
-                  const SizedBox(width: 6),
-                  Text(
-                    entry.key,
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              child: Text(entry.key, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
             ),
             ...entry.value.map((v) => _buildVerificationItem(v)),
           ],
@@ -320,81 +363,72 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final itemDate = DateTime(date.year, date.month, date.day);
-
     if (itemDate == today) return 'Hoje';
     if (itemDate == today.subtract(const Duration(days: 1))) return 'Ontem';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   Widget _buildVerificationItem(VerificationItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade800),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: item.status.color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(6),
+    return GestureDetector(
+      onTap: () => _showDetails(item), // Ação de clique para ver por extenso
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: item.status == VerificationStatus.pending 
+                ? Colors.grey.shade800 
+                : item.status.color.withOpacity(0.3)
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: item.status.color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(item.status.icon, color: item.status.color, size: 14),
+                      const SizedBox(width: 4),
+                      Text(item.status.label.toUpperCase(), style: TextStyle(color: item.status.color, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(item.status.icon, color: item.status.color, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      item.type.toUpperCase(),
-                      style: TextStyle(
-                        color: item.status.color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                const Spacer(),
+                Text(
+                  '${item.verifiedAt.hour.toString().padLeft(2, '0')}:${item.verifiedAt.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${item.verifiedAt.hour.toString().padLeft(2, '0')}:${item.verifiedAt.minute.toString().padLeft(2, '0')}',
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            item.content,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                item.status.label.toLowerCase(),
-                style: TextStyle(color: item.status.color, fontSize: 11),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${item.confidence}% confiança',
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-              ),
-              const Spacer(),
-              Icon(Icons.open_in_new, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 8),
-              Icon(Icons.delete_outline, size: 16, color: Colors.grey.shade600),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              item.content,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.info_outline, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text('Toque para ver detalhes', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+                const Spacer(),
+                if (item.status != VerificationStatus.pending)
+                   Text('${item.confidence}% confiança', style: TextStyle(color: item.status.color, fontSize: 11, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
