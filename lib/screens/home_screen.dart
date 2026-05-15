@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
 import '../services/economy_service.dart';
 import '../services/verification_service.dart';
 import '../services/news_service.dart';
-import 'historycheck_screen.dart';
+import 'history_screen.dart'; // <-- Corrigido para apontar para a tela certa
 import 'news_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,43 +18,51 @@ class _HomeScreenState extends State<HomeScreen> {
   final VerificationService _verificationService = VerificationService();
   final NewsService _newsService = NewsService();
 
+  StreamSubscription? _verificationsSubscription;
   List<VerificationItem> _recentVerifications = [];
   List<NewsItem> _latestNews = [];
-  bool _isLoading = true;
+  bool _isLoadingNews = true;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadNews();
+    _startListeningVerifications();
   }
 
-  Future<void> _loadData() async {
-    List<VerificationItem> verifications = [];
-    List<NewsItem> news = [];
+  @override
+  void dispose() {
+    _verificationsSubscription?.cancel();
+    super.dispose();
+  }
 
-    // 1. Tenta carregar as verificações recentes
+  // 1. Carrega as Notícias (mantido como Future)
+  Future<void> _loadNews() async {
     try {
-      verifications = await _verificationService.getRecentVerifications();
+      final news = await _newsService.getAllNews();
+      if (mounted) {
+        setState(() {
+          _latestNews = news.take(3).toList();
+          _isLoadingNews = false;
+        });
+      }
     } catch (e) {
-      print("Erro ao carregar verificações: $e");
-      // Se o índice ainda estiver sendo criado, a lista continuará vazia
+      if (mounted) {
+        setState(() => _isLoadingNews = false);
+      }
     }
+  }
 
-    // 2. Tenta carregar as notícias de forma independente
-    try {
-      news = await _newsService.getAllNews();
-    } catch (e) {
-      print("Erro ao carregar notícias: $e");
-    }
-
-    // 3. Atualiza a interface e encerra o carregamento infinito
-    if (mounted) {
-      setState(() {
-        _recentVerifications = verifications.take(3).toList();
-        _latestNews = news.take(3).toList();
-        _isLoading = false;
-      });
-    }
+  // 2. Escuta as Verificações em Tempo Real
+  void _startListeningVerifications() {
+    _verificationsSubscription = _verificationService.ouvirUserVerifications().listen((data) {
+      if (mounted) {
+        setState(() {
+          // Pega apenas as 3 verificações mais recentes do topo da lista
+          _recentVerifications = data.take(3).toList();
+        });
+      }
+    });
   }
 
   @override
@@ -65,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildVerificationSection(),
           const SizedBox(height: 24),
-          _buildQuickActions(context), // Passando context para navegação
+          _buildQuickActions(context),
           const SizedBox(height: 24),
           _buildMarketRates(),
           const SizedBox(height: 24),
@@ -94,8 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
+          Row(
+            children: const [
               Icon(Icons.shield, color: Colors.white, size: 28),
               SizedBox(width: 10),
               Text(
@@ -111,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Você está protegido pelo ETHOS. Fique atualizado e verifique conteúdos suspeitos.',
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
+                color: Colors.white.withOpacity(0.9), fontSize: 14),
           ),
         ],
       ),
@@ -167,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const HistoryCheckScreen())),
+                        builder: (context) => const HistoryScreen())), // <-- Aponta para HistoryScreen
               ),
             ],
           ),
@@ -183,10 +192,8 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       child: Container(
         width: 100,
-        // height: 115, <-- REMOVE THIS LINE
         margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(
-            vertical: 16, horizontal: 8), // Adjust padding for vertical spacing
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(16),
@@ -194,13 +201,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize:
-              MainAxisSize.min, // Ensure column only takes necessary space
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
+                color: color.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -323,8 +329,8 @@ class _HomeScreenState extends State<HomeScreen> {
             GestureDetector(
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (context) => const NewsScreen())),
-              child: const Row(
-                children: [
+              child: Row(
+                children: const [
                   Text('Ver todas',
                       style: TextStyle(color: Color(0xFF4CAF50), fontSize: 13)),
                   SizedBox(width: 4),
@@ -335,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        if (_isLoading)
+        if (_isLoadingNews)
           const Center(
               child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
         else if (_latestNews.isEmpty)
@@ -358,17 +364,14 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        // height: 80, <-- REMOVE THIS LINE
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade800),
         ),
         child: IntrinsicHeight(
-          // Ensures the row takes the height of the largest child
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment
-                .stretch, // Makes children stretch to match the tallest child
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ClipRRect(
                 borderRadius:
@@ -376,7 +379,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Image.network(
                   news.imageUrl,
                   width: 80,
-                  // Remove fixed height here too, let it fill the stretch
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     width: 80,
@@ -394,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         news.title,
-                        maxLines: 3, // Allow up to 3 lines for the title
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
@@ -403,17 +405,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 1.2,
                         ),
                       ),
-                      const SizedBox(
-                          height:
-                              8), // Add some spacing between title and metadata
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF4CAF50)
-                                  .withValues(alpha: 0.2),
+                              color: const Color(0xFF4CAF50).withOpacity(0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
@@ -460,16 +459,16 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.2),
+              color: Colors.blue.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.lightbulb_outline, color: Colors.blue),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: const [
                 Text(
                   'Dica do dia',
                   style: TextStyle(
@@ -500,9 +499,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 16),
-        if (_isLoading)
-          const Center(child: CircularProgressIndicator())
-        else if (_recentVerifications.isEmpty)
+        if (_recentVerifications.isEmpty)
           Center(
             child: Text(
               'Nenhuma verificação recente.',
@@ -522,14 +519,18 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade800),
+        border: Border.all(
+            color: item.status == VerificationStatus.pending 
+                ? Colors.grey.shade800 
+                : item.status.color.withOpacity(0.3)
+        ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: item.status.color.withValues(alpha: 0.2),
+              color: item.status.color.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(item.status.icon, color: item.status.color, size: 20),
@@ -542,14 +543,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   item.content,
                   style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w500),
+                      fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${item.source} · ${_formatTime(item.verifiedAt)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                Row(
+                  children: [
+                    Text(
+                      item.status.label,
+                      style: TextStyle(fontSize: 11, color: item.status.color, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      ' · ${_formatTime(item.verifiedAt)}',
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -561,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _formatTime(DateTime time) {
     final diff = DateTime.now().difference(time);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} Min';
+    if (diff.inMinutes < 60) return '${diff.inMinutes > 0 ? diff.inMinutes : 1} min';
     if (diff.inHours < 24) return '${diff.inHours}h';
     return '${diff.inDays}d';
   }

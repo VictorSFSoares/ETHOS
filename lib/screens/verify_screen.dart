@@ -41,6 +41,22 @@ class _VerifyScreenState extends State<VerifyScreen> {
           _isVerifying = false;
         });
         _controller.clear();
+
+        // Novo: Aviso visual rápido de sucesso
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.send, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(child: Text("Solicitação enviada com sucesso!")),
+              ],
+            ),
+            backgroundColor: Color(0xFF4CAF50),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -71,14 +87,14 @@ class _VerifyScreenState extends State<VerifyScreen> {
               StreamBuilder<DocumentSnapshot>(
                 stream: _verificationService.ouvirResultado(_currentDocId!),
                 builder: (context, snapshot) {
-                  // Mostrar *loading* enquanto liga ao servidor
+                  // Mostrar *loading* rápido apenas enquanto liga ao servidor
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                       child: Column(
                         children: [
                           CircularProgressIndicator(color: Color(0xFF4CAF50)),
                           SizedBox(height: 16),
-                          Text('A contactar os servidores...',
+                          Text('A enviar para os servidores...',
                               style: TextStyle(color: Colors.grey)),
                         ],
                       ),
@@ -94,32 +110,54 @@ class _VerifyScreenState extends State<VerifyScreen> {
                   }
 
                   final data = snapshot.data!.data() as Map<String, dynamic>;
+                  final confianca = (data['confianca'] ?? 0).toInt();
 
-                  // Mostrar *loading* enquanto a IA processa o texto
+                  // --- MUDANÇA PRINCIPAL AQUI ---
+                  // Substituímos a bolinha girando por um Card de "Em Análise"
                   if (data['status'] == 'pendente') {
-                    return const Center(
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                      ),
                       child: Column(
                         children: [
-                          CircularProgressIndicator(color: Color(0xFF4CAF50)),
-                          SizedBox(height: 16),
-                          Text('A aguardar processamento na nuvem da IA...',
-                              style: TextStyle(color: Colors.grey)),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.pending_actions, color: Colors.orange, size: 40),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Verificação em Análise',
+                            style: TextStyle(color: Colors.orange, fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'A sua solicitação foi recebida e entrou em análise pela nossa equipa técnica. Assim que for verificada, receberá uma notificação!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey.shade400, fontSize: 14, height: 1.5),
+                          ),
                         ],
                       ),
                     );
                   }
 
-                  // Resposta final
+                  // Resposta final (Quando os desenvolvedores avaliam no Firebase)
                   final itemResult = VerificationItem(
                     id: snapshot.data!.id,
                     content: data['conteudo'] ?? '',
                     type: data['tipo'] ?? 'texto',
                     source: data['usuario_email'] ?? 'Usuário',
-                    status: _mapStatus(
-                        data['status'] ?? '', data['veredito'] ?? ''),
-                    confidence: (data['confianca'] ?? 0).toInt(),
-                    verifiedAt: (data['timestamp'] as Timestamp?)?.toDate() ??
-                        DateTime.now(),
+                    status: _mapStatus(data['status'] ?? '', confianca), // Nova lógica de porcentagem
+                    confidence: confianca,
+                    verifiedAt: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
                     details: data['detalhes'],
                   );
                   return _buildResultCard(itemResult);
@@ -152,11 +190,11 @@ class _VerifyScreenState extends State<VerifyScreen> {
     );
   }
 
-  VerificationStatus _mapStatus(String status, String veredito) {
+  // Nova regra baseada em porcentagem acompanhando o serviço
+  VerificationStatus _mapStatus(String status, int confianca) {
     if (status == 'pendente') return VerificationStatus.pending;
-    if (veredito == 'verdadeiro') return VerificationStatus.verified;
-    if (veredito == 'falso' || veredito == 'falsenews')
-      return VerificationStatus.fakeNews;
+    if (confianca >= 70) return VerificationStatus.verified;
+    if (confianca <= 30) return VerificationStatus.fakeNews;
     return VerificationStatus.suspicious;
   }
 
@@ -230,8 +268,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.search, color: Colors.white),
             style: IconButton.styleFrom(
-              backgroundColor: const Color(
-                  0xFF4CAF50), // Forçado para verde caso o primaryColor falhe
+              backgroundColor: const Color(0xFF4CAF50),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
@@ -264,7 +301,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                       letterSpacing: 1.1)),
               const Spacer(),
               Text('${result.confidence}%',
-                  style: TextStyle(color: result.status.color, fontSize: 12)),
+                  style: TextStyle(color: result.status.color, fontSize: 12, fontWeight: FontWeight.bold)),
             ],
           ),
           if (result.details != null && result.details!.isNotEmpty) ...[

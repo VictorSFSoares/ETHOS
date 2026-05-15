@@ -1,14 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter/material.dart'; // Import necessário para Color e IconData
 import '../models/data_models.dart';
+import '../screens/notifications_screen.dart'; // Import para o modelo NotificationItem
 
 class VerificationService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 🔴 COLA A TUA API KEY DO GEMINI AQUI ENTRE AS ASPAS:
-  // Lembrete: Por segurança, no futuro, mova isso para um arquivo .env!
   static const String _apiKey = 'AIzaSyAnfm5jnl7MnvGqnbJKZt-KHN59xG_dWJk';
 
   // 1. Envia para a IA e guarda no Firebase
@@ -50,8 +50,7 @@ class VerificationService {
     } catch (e) {
       print("Erro na IA: $e");
       vereditoFinal = "erro";
-      detalhesFinal =
-          "Falha ao contactar a IA. Verifica a tua ligação à internet ou a API Key.";
+      detalhesFinal = "Falha ao contactar a IA.";
     }
 
     final docRef = await _db.collection('verificacoes').add({
@@ -59,7 +58,7 @@ class VerificationService {
       'usuario_email': _auth.currentUser?.email ?? 'Usuário',
       'conteudo': conteudo,
       'tipo': tipo,
-      'status': 'pendente', // Mantido como você enviou
+      'status': 'pendente', 
       'veredito': vereditoFinal,
       'confianca': 95,
       'detalhes': detalhesFinal,
@@ -74,7 +73,7 @@ class VerificationService {
     return _db.collection('verificacoes').doc(docId).snapshots();
   }
 
-  // 3. Buscar APENAS AS RECENTES (Para a Tela Inicial - HOME SCREEN)
+  // 3. Buscar APENAS AS RECENTES
   Future<List<VerificationItem>> getRecentVerifications() async {
     final snapshot = await _db
         .collection('verificacoes')
@@ -86,18 +85,7 @@ class VerificationService {
     return snapshot.docs.map((doc) => _mapDocToItem(doc)).toList();
   }
 
-  // 4. Buscar TODO O HISTÓRICO (Para a Tela de Histórico - HISTORY SCREEN)
-  Future<List<VerificationItem>> getUserVerifications() async {
-    final snapshot = await _db
-        .collection('verificacoes')
-        .where('usuario_id', isEqualTo: _auth.currentUser?.uid)
-        .orderBy('timestamp', descending: true)
-        .get();
-
-    return snapshot.docs.map((doc) => _mapDocToItem(doc)).toList();
-  }
-
-  // 4.1. NOVO: Escuta TODO O HISTÓRICO EM TEMPO REAL
+  // 4. Buscar HISTÓRICO EM TEMPO REAL
   Stream<List<VerificationItem>> ouvirUserVerifications() {
     return _db
         .collection('verificacoes')
@@ -108,7 +96,68 @@ class VerificationService {
             snapshot.docs.map((doc) => _mapDocToItem(doc)).toList());
   }
 
-  // 5. Buscar ESTATÍSTICAS do Usuário (Para o Perfil)
+  // --- NOVO: SISTEMA DE NOTIFICAÇÕES REAIS ---
+
+  Stream<List<NotificationItem>> ouvirNotificacoes() {
+    return _db
+        .collection('notificacoes')
+        .where('usuario_id', isEqualTo: _auth.currentUser?.uid)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              return NotificationItem(
+                id: doc.id,
+                title: data['titulo'] ?? 'Aviso',
+                message: data['mensagem'] ?? '',
+                time: _formatTimestamp(data['timestamp']),
+                icon: _mapIcon(data['icone_tipo']),
+                iconColor: Color(int.parse(data['cor'] ?? '0xFF4CAF50')),
+                isRead: data['lida'] ?? false,
+                type: data['tipo'] ?? 'Sistema',
+              );
+            }).toList());
+  }
+
+  Future<void> marcarNotificacaoComoLida(String id) async {
+    await _db.collection('notificacoes').doc(id).update({'lida': true});
+  }
+
+  Future<void> marcarTodasComoLidas() async {
+    final batch = _db.batch();
+    final notifications = await _db
+        .collection('notificacoes')
+        .where('usuario_id', isEqualTo: _auth.currentUser?.uid)
+        .where('lida', isEqualTo: false)
+        .get();
+
+    for (var doc in notifications.docs) {
+      batch.update(doc.reference, {'lida': true});
+    }
+    await batch.commit();
+  }
+
+  // Auxiliares de Notificação
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) return 'Agora';
+    DateTime date = (timestamp as Timestamp).toDate();
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min atrás';
+    if (diff.inHours < 24) return '${diff.inHours}h atrás';
+    return '${date.day}/${date.month}';
+  }
+
+  IconData _mapIcon(String? tipo) {
+    switch (tipo) {
+      case 'verificacao': return Icons.check_circle;
+      case 'alerta': return Icons.warning;
+      case 'conquista': return Icons.emoji_events;
+      default: return Icons.notifications;
+    }
+  }
+
+  // --- MÉTODOS DE ESTATÍSTICAS E CONVERSÃO MANTIDOS ---
+
   Future<UserStats> getUserStats() async {
     final snapshot = await _db
         .collection('verificacoes')
@@ -116,45 +165,37 @@ class VerificationService {
         .get();
 
     int verified = 0, fakeNews = 0, suspicious = 0;
-
     for (var doc in snapshot.docs) {
-      final veredito = doc.data()['veredito'];
-      if (veredito == 'verdadeiro') {
-        verified++;
-      } else if (veredito == 'falso') {
-        fakeNews++;
-      } else {
-        suspicious++;
+      final data = doc.data();
+      final confianca = (data['confianca'] ?? 0).toInt();
+      if (data['status'] != 'pendente') {
+        if (confianca >= 70) verified++;
+        else if (confianca <= 30) fakeNews++;
+        else suspicious++;
       }
     }
-
-    return UserStats(
-      totalVerifications: snapshot.docs.length,
-      verified: verified,
-      fakeNews: fakeNews,
-      suspicious: suspicious,
-    );
+    return UserStats(totalVerifications: snapshot.docs.length, verified: verified, fakeNews: fakeNews, suspicious: suspicious);
   }
 
-  // 6. Helpers de Conversão (Firestore -> App)
   VerificationItem _mapDocToItem(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final confianca = (data['confianca'] ?? 0).toInt();
     return VerificationItem(
       id: doc.id,
       content: data['conteudo'] ?? '',
       type: data['tipo'] ?? 'texto',
       source: data['usuario_email'] ?? 'Desconhecido',
-      status: _internalMapStatus(data['status'], data['veredito']),
-      confidence: data['confianca'] ?? 0,
+      status: _internalMapStatus(data['status'], confianca),
+      confidence: confianca,
       verifiedAt: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       details: data['detalhes'],
     );
   }
 
-  VerificationStatus _internalMapStatus(String? status, String? veredito) {
+  VerificationStatus _internalMapStatus(String? status, int confianca) {
     if (status == 'pendente') return VerificationStatus.pending;
-    if (veredito == 'verdadeiro') return VerificationStatus.verified;
-    if (veredito == 'falso') return VerificationStatus.fakeNews; 
+    if (confianca >= 70) return VerificationStatus.verified;
+    if (confianca <= 30) return VerificationStatus.fakeNews;
     return VerificationStatus.suspicious;
   }
 }

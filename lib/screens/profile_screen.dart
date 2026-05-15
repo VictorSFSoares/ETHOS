@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -5,9 +6,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart'; // <-- IMPORTANTE: Para carregar o pt-BR
+import 'package:intl/date_symbol_data_local.dart';
 import '../services/db_helper.dart';
 import '../services/user_service.dart';
+import '../services/verification_service.dart'; // <-- Novo Import
+import '../models/data_models.dart'; // <-- Novo Import
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,12 +21,14 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final DBHelper _dbHelper = DBHelper();
+  final VerificationService _verificationService = VerificationService(); // <-- Nova instância
   final ImagePicker _picker = ImagePicker();
 
   final User? currentUser = FirebaseAuth.instance.currentUser;
+  StreamSubscription? _statsSubscription;
 
   String _avatarPath = '';
-  int _verificationsCount = 0;
+  UserStats _stats = UserStats(totalVerifications: 0, verified: 0, fakeNews: 0, suspicious: 0);
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -31,9 +36,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Inicializa o formato de datas para Português do Brasil
     initializeDateFormatting('pt_BR', null);
     _loadProfile();
+    _startListeningStats();
+  }
+
+  @override
+  void dispose() {
+    _statsSubscription?.cancel();
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  // Escuta as mudanças no histórico para atualizar os contadores no perfil
+  void _startListeningStats() {
+    _statsSubscription = _verificationService.ouvirUserVerifications().listen((_) async {
+      final updatedStats = await _verificationService.getUserStats();
+      if (mounted) {
+        setState(() {
+          _stats = updatedStats;
+        });
+      }
+    });
   }
 
   Future<void> _loadProfile() async {
@@ -41,19 +66,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (email != null) {
       final profile = await _dbHelper.getProfile(email);
-      final historyCount = await _dbHelper.getHistoryCount(email);
+      // Puxa as estatísticas iniciais da nuvem
+      final cloudStats = await _verificationService.getUserStats();
 
-      if (profile != null && mounted) {
+      if (mounted) {
         setState(() {
-          _nameController.text = profile['name'] ?? '';
+          _nameController.text = profile?['name'] ?? '';
           _emailController.text = email;
-          _avatarPath = profile['avatar_path'] ?? '';
-          _verificationsCount = historyCount;
-        });
-      } else {
-        setState(() {
-          _emailController.text = email;
-          _verificationsCount = historyCount;
+          _avatarPath = profile?['avatar_path'] ?? '';
+          _stats = cloudStats;
         });
       }
     }
@@ -99,10 +120,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     UserService().clearUser();
   }
 
-  // --- Função com a data 100% em pt-BR ---
   String get _formattedCreationDate {
     if (currentUser?.metadata.creationTime != null) {
-      // O 'pt_BR' garante que os meses apareçam como abr, mai, jun, etc.
       return DateFormat("dd 'de' MMM 'de' yyyy", 'pt_BR')
           .format(currentUser!.metadata.creationTime!);
     }
@@ -111,12 +130,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Verifica se a tela foi aberta pelo botão do topo (pode voltar) ou pela barra inferior
     final bool isPushed = Navigator.canPop(context);
 
     return Scaffold(
       backgroundColor: Colors.black,
-      // Só mostra a AppBar com a seta de voltar se foi aberta pelo Header
       appBar: isPushed
           ? AppBar(
               backgroundColor: Colors.black,
@@ -127,115 +144,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             )
           : null,
-      // O seu código original continua igualzinho aqui dentro do body:
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            GestureDetector(
-              onTap: _pickImage,
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    backgroundImage:
-                        _avatarPath.isNotEmpty && File(_avatarPath).existsSync()
-                            ? FileImage(File(_avatarPath))
-                            : null,
-                    child: _avatarPath.isEmpty || !File(_avatarPath).existsSync()
-                        ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                        : null,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                        color: Color(0xFF4CAF50), shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt,
-                        color: Colors.black, size: 20),
-                  ),
-                ],
-              ),
-            ),
+            _buildAvatarHeader(),
             const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: const Color(0xFF4CAF50).withOpacity(0.3), width: 1),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildStatColumn(
-                      'Verificações', '$_verificationsCount', Icons.shield),
-                  Container(width: 1, height: 40, color: Colors.grey.shade800),
-                  _buildStatColumn('Membro desde', _formattedCreationDate,
-                      Icons.calendar_today),
-                ],
-              ),
-            ),
+            _buildCloudStatsCard(),
             const SizedBox(height: 32),
-            _buildTextField('Nome Completo', _nameController, Icons.badge,
-                readOnly: false),
+            _buildTextField('Nome Completo', _nameController, Icons.badge),
             const SizedBox(height: 16),
-            _buildTextField('E-mail (Login)', _emailController, Icons.email,
-                readOnly: true),
+            _buildTextField('E-mail (Login)', _emailController, Icons.email, readOnly: true),
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4CAF50),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () => _saveProfile(),
-                child: const Text('Salvar Alterações',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout, color: Colors.redAccent),
-              label: const Text('Sair da Conta',
-                  style: TextStyle(color: Colors.redAccent, fontSize: 16)),
-            )
+            _buildActionButtons(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatColumn(String label, String value, IconData icon) {
+  Widget _buildAvatarHeader() {
+    return GestureDetector(
+      onTap: _pickImage,
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          CircleAvatar(
+            radius: 60,
+            backgroundColor: const Color(0xFF1A1A1A),
+            backgroundImage: _avatarPath.isNotEmpty && File(_avatarPath).existsSync()
+                ? FileImage(File(_avatarPath))
+                : null,
+            child: _avatarPath.isEmpty || !File(_avatarPath).existsSync()
+                ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                : null,
+          ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle),
+            child: const Icon(Icons.camera_alt, color: Colors.black, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCloudStatsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem('Total', _stats.totalVerifications.toString(), Icons.analytics, Colors.blue),
+              _buildStatItem('Verdade', _stats.verified.toString(), Icons.check_circle, Colors.green),
+              _buildStatItem('Fake', _stats.fakeNews.toString(), Icons.cancel, Colors.red),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.calendar_today, color: Colors.grey, size: 14),
+              const SizedBox(width: 8),
+              Text(
+                'Membro desde: $_formattedCreationDate',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: const Color(0xFF4CAF50), size: 24),
+        Icon(icon, color: color, size: 22),
         const SizedBox(height: 8),
-        Text(value,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
       ],
     );
   }
 
-  Widget _buildTextField(
-      String label, TextEditingController controller, IconData icon,
-      {bool readOnly = false}) {
+  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {bool readOnly = false}) {
     return TextField(
       controller: controller,
       readOnly: readOnly,
@@ -243,19 +246,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey.shade500),
-        prefixIcon: Icon(icon,
-            color: readOnly ? Colors.grey.shade600 : const Color(0xFF4CAF50)),
+        prefixIcon: Icon(icon, color: readOnly ? Colors.grey.shade600 : const Color(0xFF4CAF50)),
         filled: true,
         fillColor: const Color(0xFF1A1A1A),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-              color: readOnly ? Colors.transparent : const Color(0xFF4CAF50)),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => _saveProfile(),
+            child: const Text('Salvar Alterações', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextButton.icon(
+          onPressed: _logout,
+          icon: const Icon(Icons.logout, color: Colors.redAccent),
+          label: const Text('Sair da Conta', style: TextStyle(color: Colors.redAccent)),
+        ),
+      ],
     );
   }
 }
