@@ -46,7 +46,9 @@ class _NewsScreenState extends State<NewsScreen> {
     if (_selectedCategory == 'Todas') {
       return _allNews;
     }
-    return _allNews.where((news) => news.category == _selectedCategory).toList();
+    return _allNews
+        .where((news) => news.category == _selectedCategory)
+        .toList();
   }
 
   void _showNewsDetail(NewsItem news) {
@@ -63,7 +65,8 @@ class _NewsScreenState extends State<NewsScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
           : Column(
               children: [
                 _buildCategoryFilter(),
@@ -116,7 +119,8 @@ class _NewsScreenState extends State<NewsScreen> {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFF4CAF50) : Colors.grey.shade800,
+                color:
+                    isSelected ? const Color(0xFF4CAF50) : Colors.grey.shade800,
               ),
             ),
           );
@@ -139,7 +143,8 @@ class _NewsScreenState extends State<NewsScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start, // Alinha os itens no topo
+            crossAxisAlignment:
+                CrossAxisAlignment.start, // Alinha os itens no topo
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -152,7 +157,8 @@ class _NewsScreenState extends State<NewsScreen> {
                     width: 90,
                     height: 90,
                     color: Colors.grey.shade900,
-                    child: const Icon(Icons.image_not_supported, color: Colors.white24),
+                    child: const Icon(Icons.image_not_supported,
+                        color: Colors.white24),
                   ),
                 ),
               ),
@@ -182,7 +188,8 @@ class _NewsScreenState extends State<NewsScreen> {
                     const SizedBox(height: 8),
                     Text(
                       news.description,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                      style:
+                          TextStyle(color: Colors.grey.shade500, fontSize: 12),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -192,12 +199,14 @@ class _NewsScreenState extends State<NewsScreen> {
               // NOVO: Botão de Favoritar
               IconButton(
                 icon: Icon(
-                  news.isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: news.isFavorite ? Colors.red : Colors.grey.shade600,
+                  news.isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                  color: news.isFavorite
+                      ? const Color(0xFF4CAF50)
+                      : Colors.grey.shade600,
                 ),
                 onPressed: () async {
                   await _newsService.toggleFavorite(news.id);
-                  setState(() {}); // Atualiza a tela para mudar a cor do coração
+                  setState(() {});
                 },
               ),
             ],
@@ -235,7 +244,7 @@ class _NewsScreenState extends State<NewsScreen> {
                     fontWeight: FontWeight.bold,
                     color: Colors.white)),
             const SizedBox(height: 12),
-            Text("${news.source} • ${news.category}", 
+            Text("${news.source} • ${news.category}",
                 style: const TextStyle(
                     color: Color(0xFF4CAF50), fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
