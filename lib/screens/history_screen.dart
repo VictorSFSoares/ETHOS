@@ -192,26 +192,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildSearchBar(),
-              const SizedBox(height: 16),
-              _buildFilterChips(),
-              const SizedBox(height: 16),
-              _buildStatsCards(),
-            ],
+    // AQUI FOI ADICIONADO O SCAFFOLD PARA RESOLVER O ERRO DO MATERIAL WIDGET
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildSearchBar(),
+                const SizedBox(height: 16),
+                _buildFilterChips(),
+                const SizedBox(height: 16),
+                _buildStatsCards(),
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
-              : _buildVerificationList(),
-        ),
-      ],
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
+                : _buildVerificationList(),
+          ),
+        ],
+      ),
     );
   }
 
