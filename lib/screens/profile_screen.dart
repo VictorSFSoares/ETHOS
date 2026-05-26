@@ -9,8 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../services/db_helper.dart';
 import '../services/user_service.dart';
-import '../services/verification_service.dart'; // <-- Novo Import
-import '../models/data_models.dart'; // <-- Novo Import
+import '../services/verification_service.dart';
+import '../models/data_models.dart';
+import 'admin_screen.dart'; // <-- IMPORTANTE: Importação do Ecrã de Admin adicionada aqui!
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -21,7 +22,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final DBHelper _dbHelper = DBHelper();
-  final VerificationService _verificationService = VerificationService(); // <-- Nova instância
+  final VerificationService _verificationService = VerificationService();
   final ImagePicker _picker = ImagePicker();
 
   final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -49,7 +50,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  // Escuta as mudanças no histórico para atualizar os contadores no perfil
   void _startListeningStats() {
     _statsSubscription = _verificationService.ouvirUserVerifications().listen((_) async {
       final updatedStats = await _verificationService.getUserStats();
@@ -66,7 +66,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (email != null) {
       final profile = await _dbHelper.getProfile(email);
-      // Puxa as estatísticas iniciais da nuvem
       final cloudStats = await _verificationService.getUserStats();
 
       if (mounted) {
@@ -257,6 +256,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildActionButtons() {
     return Column(
       children: [
+        // --- TRAVA DE SEGURANÇA: Botão de Admin APENAS para o e-mail autorizado ---
+        if (currentUser?.email == 'joeldson1@gmail.com') ...[
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminScreen()),
+                );
+              },
+              icon: const Icon(Icons.admin_panel_settings, color: Colors.black),
+              label: const Text('Painel de Moderação (Equipa)', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        // -------------------------------------------------------------------------
+
         SizedBox(
           width: double.infinity,
           height: 50,
@@ -275,6 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: const Icon(Icons.logout, color: Colors.redAccent),
           label: const Text('Sair da Conta', style: TextStyle(color: Colors.redAccent)),
         ),
+        const SizedBox(height: 40), // Espaço extra no fundo
       ],
     );
   }

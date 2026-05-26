@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/profile_screen.dart'; 
 import 'hamburger_menu.dart'; 
 
@@ -71,21 +73,14 @@ class HeaderWidget extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             
-            // 2. Botão de Notificações
-            _buildHeaderButton(
-              icon: Icons.notifications_none,
-              onTap: () {
-                // Redireciona para a tela usando a rota mapeada no main.dart
-                Navigator.pushNamed(context, '/notifications');
-              },
-            ),
+            // 2. Botão de Notificações com a Bolinha Vermelha Inteligente
+            _buildNotificationButton(context),
             const SizedBox(width: 8),
             
             // 3. Menu Hambúrguer
             _buildHeaderButton(
               icon: Icons.menu,
               onTap: () {
-                // Abre o menu hambúrguer desenhado no passo anterior
                 showModalBottomSheet(
                   context: context,
                   backgroundColor: Colors.transparent,
@@ -99,7 +94,75 @@ class HeaderWidget extends StatelessWidget {
     );
   }
 
-  // Função atualizada COM animação de clique nativa do Flutter
+  // --- LÓGICA DA BOLINHA VERMELHA INTEGRADA AO DESIGN ---
+  Widget _buildNotificationButton(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    // Se não estiver logado, mostra o botão normal sem o verificador
+    if (currentUser == null) {
+      return _buildHeaderButton(
+        icon: Icons.notifications_none,
+        onTap: () => Navigator.pushNamed(context, '/notifications'),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notificacoes')
+          .where('usuario_id', isEqualTo: currentUser.uid)
+          .where('lida', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        int quantidadeNaoLidas = 0;
+
+        if (snapshot.hasData && snapshot.data != null) {
+          quantidadeNaoLidas = snapshot.data!.docs.length;
+        }
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // O botão base mantém o mesmo design original
+            _buildHeaderButton(
+              icon: Icons.notifications_none,
+              onTap: () {
+                Navigator.pushNamed(context, '/notifications');
+              },
+            ),
+            
+            // A bolinha vermelha só aparece se houver notificações novas
+            if (quantidadeNaoLidas > 0)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Text(
+                    quantidadeNaoLidas > 9 ? '9+' : '$quantidadeNaoLidas',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Função base COM animação de clique nativa do Flutter (Mantida intacta)
   Widget _buildHeaderButton({required IconData icon, required VoidCallback onTap}) {
     return Material(
       color: const Color(0xFF1A1A1A), // Cor de fundo do botão
